@@ -6,7 +6,7 @@ struct _LrMainWindow
 {
   GtkApplicationWindow parent_instance;
 
-  lr_database_t *db;
+  LrDatabase *db;
 
   /* Widgets */
   GtkWidget *headerbar;
@@ -270,7 +270,7 @@ lr_main_window_new (GtkApplication *application)
 }
 
 void
-lr_main_window_set_database (LrMainWindow *self, lr_database_t *db)
+lr_main_window_set_database (LrMainWindow *self, LrDatabase *db)
 {
   g_return_if_fail (LR_IS_MAIN_WINDOW (self));
   g_return_if_fail (db != NULL);
@@ -308,7 +308,7 @@ lr_main_window_set_database (LrMainWindow *self, lr_database_t *db)
     }
 }
 
-lr_database_t *
+LrDatabase *
 lr_main_window_get_database (LrMainWindow *self)
 {
   g_return_val_if_fail (LR_IS_MAIN_WINDOW (self), NULL);

@@ -17,7 +17,7 @@ init_css ()
 }
 
 static void
-activate_cb (GtkApplication *app, lr_database_t *db)
+activate_cb (GtkApplication *app, LrDatabase *db)
 {
   GtkWidget *window = lr_main_window_new (app);
   lr_main_window_set_database (LR_MAIN_WINDOW (window), db);
@@ -32,7 +32,7 @@ main (int argc, char **argv)
   init_css ();
 
   /* TODO: Find the database file in a more robust way. */
-  lr_database_t *db = lr_database_open ("langrise.db");
+  LrDatabase *db = lr_database_new ("langrise.db");
 
   GtkApplication *application =
     gtk_application_new ("com.langrise.Langrise", G_APPLICATION_FLAGS_NONE);
@@ -43,7 +43,7 @@ main (int argc, char **argv)
 
   g_object_unref (application);
 
-  lr_database_close (db);
+  g_object_unref (db);
 
   return status;
 }

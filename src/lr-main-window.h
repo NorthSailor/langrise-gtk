@@ -11,8 +11,8 @@ G_DECLARE_FINAL_TYPE (LrMainWindow, lr_main_window, LR, MAIN_WINDOW, GtkApplicat
 
 GtkWidget *lr_main_window_new (GtkApplication *application);
 
-void lr_main_window_set_database (LrMainWindow *self, lr_database_t *db);
-lr_database_t *lr_main_window_get_database (LrMainWindow *self);
+void lr_main_window_set_database (LrMainWindow *self, LrDatabase *db);
+LrDatabase *lr_main_window_get_database (LrMainWindow *self);
 
 G_END_DECLS
 

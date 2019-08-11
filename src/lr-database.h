@@ -2,10 +2,9 @@
 #define _lr_database_h
 
 #include <glib.h>
+#include <glib-object.h>
 
 G_BEGIN_DECLS
-
-typedef struct _lr_database_t lr_database_t;
 
 typedef struct
 {
@@ -29,14 +28,17 @@ typedef struct
   gchar *text;
 } lr_text_t;
 
-lr_database_t *lr_database_open (const gchar *path);
-void lr_database_close (lr_database_t *db);
+#define LR_TYPE_DATABASE (lr_database_get_type ())
+G_DECLARE_FINAL_TYPE (LrDatabase, lr_database, LR, DATABASE, GObject)
 
-GList *lr_database_get_languages (lr_database_t *db);
+LrDatabase *lr_database_new (gchar *path);
+void lr_database_close (LrDatabase *self);
+
+GList *lr_database_get_languages (LrDatabase *self);
 
 void lr_database_language_free (lr_language_t *lang);
 
-GList *lr_database_get_texts (lr_database_t *db, int lang_id);
+GList *lr_database_get_texts (LrDatabase *self, int lang_id);
 void lr_database_text_free (lr_text_t *text);
 
 G_END_DECLS

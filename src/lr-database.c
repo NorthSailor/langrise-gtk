@@ -2,20 +2,29 @@
 #include <stdio.h>
 #include <sqlite3.h>
 
-typedef struct _lr_database_t
+struct _LrDatabase
 {
+  GObject parent_instance;
   sqlite3 *db;
+
+  gchar *db_path;
 
   /* Get all languages */
   sqlite3_stmt *lang_stmt;
 
   /* Get all texts in a language */
   sqlite3_stmt *text_by_lang_stmt;
+};
 
-} lr_database_t;
+enum
+{
+  PROP_PATH = 1,
+};
+
+G_DEFINE_TYPE (LrDatabase, lr_database, G_TYPE_OBJECT)
 
 static void
-prepare_sql_statements (lr_database_t *db)
+prepare_sql_statements (LrDatabase *db)
 {
   g_assert (sqlite3_prepare_v2 (
               db->db, "SELECT ID, Code, Name FROM Languages;", -1, &db->lang_stmt, NULL) ==
@@ -29,46 +38,87 @@ prepare_sql_statements (lr_database_t *db)
 }
 
 static void
-free_sql_statements (lr_database_t *db)
+free_sql_statements (LrDatabase *db)
 {
   sqlite3_finalize (db->lang_stmt);
   sqlite3_finalize (db->text_by_lang_stmt);
 }
 
-lr_database_t *
-lr_database_open (const gchar *path)
+static void
+open_database (LrDatabase *self)
 {
-  lr_database_t *db = g_malloc (sizeof (lr_database_t));
-
-  int rc = sqlite3_open_v2 (path, &db->db, SQLITE_OPEN_READWRITE, NULL);
+  int rc = sqlite3_open_v2 (self->db_path, &self->db, SQLITE_OPEN_READWRITE, NULL);
 
   if (rc != SQLITE_OK)
     {
-      g_critical (
-        "Failed to open the database at '%s'. SQLite Error: '%s'", path, sqlite3_errmsg (db->db));
-      sqlite3_close (db->db);
+      g_critical ("Failed to open the database at '%s'. SQLite Error: '%s'",
+                  self->db_path,
+                  sqlite3_errmsg (self->db));
+      sqlite3_close (self->db);
     }
 
-  prepare_sql_statements (db);
-
-  return db;
+  prepare_sql_statements (self);
 }
 
-void
-lr_database_close (lr_database_t *db)
+static void
+lr_database_init (LrDatabase *self)
 {
-  g_return_if_fail (db != NULL);
-  g_return_if_fail (db->db != NULL);
+  self->db = NULL;
+  self->db_path = NULL;
+}
 
-  free_sql_statements (db);
+static void
+lr_database_finalize (GObject *obj)
+{
+  LrDatabase *self = LR_DATABASE (obj);
 
-  sqlite3_close (db->db);
+  free_sql_statements (self);
+  sqlite3_close (self->db);
 
-  g_free (db);
+  g_free (self->db_path);
+
+  G_OBJECT_CLASS (lr_database_parent_class)->finalize (obj);
+}
+
+static void
+lr_database_set_property (GObject *obj, guint prop_id, const GValue *value, GParamSpec *pspec)
+{
+  LrDatabase *self = LR_DATABASE (obj);
+  switch (prop_id)
+    {
+    case PROP_PATH:
+      self->db_path = g_value_dup_string (value);
+      open_database (self);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (obj, prop_id, pspec);
+    }
+}
+
+static void
+lr_database_class_init (LrDatabaseClass *klass)
+{
+  GObjectClass *object_class = G_OBJECT_CLASS (klass);
+  object_class->finalize = lr_database_finalize;
+  object_class->set_property = lr_database_set_property;
+
+  g_object_class_install_property (object_class,
+                                   PROP_PATH,
+                                   g_param_spec_string ("path",
+                                                        "Path",
+                                                        "The path to the SQLite database.",
+                                                        "",
+                                                        G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE));
+}
+
+LrDatabase *
+lr_database_new (gchar *path)
+{
+  return g_object_new (LR_TYPE_DATABASE, "path", path, NULL);
 }
 
 GList *
-lr_database_get_languages (lr_database_t *db)
+lr_database_get_languages (LrDatabase *db)
 {
   g_return_val_if_fail (db != NULL, NULL);
 
@@ -100,7 +150,7 @@ lr_database_language_free (lr_language_t *lang)
 }
 
 GList *
-lr_database_get_texts (lr_database_t *db, int lang_id)
+lr_database_get_texts (LrDatabase *db, int lang_id)
 {
   g_assert (db != NULL);
 
@@ -139,4 +189,3 @@ lr_database_text_free (lr_text_t *text)
   if (text->text != NULL)
     g_free (text->text);
 }
-
