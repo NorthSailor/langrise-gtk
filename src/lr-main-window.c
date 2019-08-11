@@ -76,11 +76,12 @@ switch_to_language (LrMainWindow *self, int lang_id)
 
       g_assert (next_lang != NULL); /* This would mean an invalid ID somehow */
 
-      g_message ("Switching to language '%s'", next_lang->name);
-
       gtk_label_set_text (GTK_LABEL (self->lang_name_label), next_lang->name);
 
       /* TODO Alert the active subview */
+
+      lr_text_selector_set_language (LR_TEXT_SELECTOR (self->text_selector), next_lang);
+
       self->active_lang = next_lang;
       self->lang_id = lang_id;
     }
@@ -283,6 +284,9 @@ lr_main_window_set_database (LrMainWindow *self, lr_database_t *db)
 
   populate_language_menu (self);
 
+  /* Alert the subviews */
+  lr_text_selector_set_database (LR_TEXT_SELECTOR (self->text_selector), self->db);
+
   /* Select a language if we have any */
   if (self->lang_list != NULL)
     {
@@ -291,6 +295,10 @@ lr_main_window_set_database (LrMainWindow *self, lr_database_t *db)
           /* There was no language selected. Pick the first one */
           lr_language_t *first = (lr_language_t *)self->lang_list->data;
           switch_to_language (self, first->id);
+        }
+      else
+        {
+          /* TODO Find the language with that ID */
         }
     }
   else

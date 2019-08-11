@@ -2,19 +2,55 @@
 <!-- Generated with glade 3.22.1 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
+  <object class="GtkImage" id="delete_icon">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">list-remove-symbolic</property>
+  </object>
+  <object class="GtkImage" id="edit_icon">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">document-edit-symbolic</property>
+  </object>
+  <object class="GtkImage" id="new_icon">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">list-add-symbolic</property>
+  </object>
+  <object class="GtkImage" id="read_icon">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">view-dual-symbolic</property>
+  </object>
   <template class="LrTextSelector" parent="GtkBox">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
+    <property name="margin_left">50</property>
+    <property name="margin_right">50</property>
+    <property name="margin_top">50</property>
+    <property name="margin_bottom">20</property>
     <property name="orientation">vertical</property>
-    <property name="homogeneous">True</property>
+    <property name="spacing">8</property>
     <child>
-      <placeholder/>
+      <object class="GtkLabel" id="title_label">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Polish texts</property>
+        <attributes>
+          <attribute name="font-desc" value="Sans Bold 20"/>
+        </attributes>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">0</property>
+      </packing>
     </child>
     <child>
       <object class="GtkLabel">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Custom widget template</property>
+        <property name="label" translatable="yes">Select a text to read</property>
       </object>
       <packing>
         <property name="expand">False</property>
@@ -23,7 +59,96 @@
       </packing>
     </child>
     <child>
-      <placeholder/>
+      <object class="GtkButtonBox">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="hexpand">True</property>
+        <property name="spacing">20</property>
+        <property name="layout_style">expand</property>
+        <child>
+          <object class="GtkButton" id="new_button">
+            <property name="label" translatable="yes">New text...</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image">new_icon</property>
+            <property name="always_show_image">True</property>
+            <signal name="clicked" handler="new_text_cb" swapped="yes"/>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="read_button">
+            <property name="label" translatable="yes">Read</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image">read_icon</property>
+            <property name="always_show_image">True</property>
+            <signal name="clicked" handler="read_text_cb" swapped="yes"/>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="delete_button">
+            <property name="label" translatable="yes">Delete</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image">delete_icon</property>
+            <property name="always_show_image">True</property>
+            <signal name="clicked" handler="delete_text_cb" swapped="yes"/>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="pack_type">end</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="edit_button">
+            <property name="label" translatable="yes">Edit...</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image">edit_icon</property>
+            <property name="always_show_image">True</property>
+            <signal name="clicked" handler="edit_text_cb" swapped="yes"/>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">3</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">2</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkListBox" id="list_box">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="hexpand">True</property>
+        <property name="vexpand">True</property>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">3</property>
+      </packing>
     </child>
   </template>
 </interface>
