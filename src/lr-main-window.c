@@ -223,7 +223,7 @@ lr_main_window_finalize (GObject *obj)
   LrMainWindow *self = LR_MAIN_WINDOW (obj);
 
   /* Free the language list */
-  g_list_free_full (self->lang_list, (GDestroyNotify)lr_database_free_language);
+  g_list_free_full (self->lang_list, (GDestroyNotify)lr_database_language_free);
   G_OBJECT_CLASS (lr_main_window_parent_class)->finalize (obj);
 }
 
@@ -278,7 +278,7 @@ lr_main_window_set_database (LrMainWindow *self, lr_database_t *db)
   self->db = db;
 
   /* Free the existing list */
-  g_list_free_full (self->lang_list, (GDestroyNotify)lr_database_free_language);
+  g_list_free_full (self->lang_list, (GDestroyNotify)lr_database_language_free);
 
   self->lang_list = lr_database_get_languages (db);
 

@@ -46,6 +46,15 @@ static void
 populate_text_list (LrTextSelector *self)
 {
   /* TODO Fill the list box with database query results */
+  GList *texts = lr_database_get_texts (self->db, self->lang_id);
+
+  for (GList *l = texts; l != NULL; l = l->next)
+    {
+      lr_text_t *text = (lr_text_t *)l->data;
+      g_message ("Found text (ID %d) '%s' with tags '%s'", text->id, text->title, text->tags);
+    }
+
+  g_list_free_full (texts, (GDestroyNotify)lr_database_text_free);
 }
 
 static void

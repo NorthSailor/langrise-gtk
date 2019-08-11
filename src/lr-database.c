@@ -8,6 +8,10 @@ typedef struct _lr_database_t
 
   /* Get all languages */
   sqlite3_stmt *lang_stmt;
+
+  /* Get all texts in a language */
+  sqlite3_stmt *text_by_lang_stmt;
+
 } lr_database_t;
 
 static void
@@ -16,6 +20,19 @@ prepare_sql_statements (lr_database_t *db)
   g_assert (sqlite3_prepare_v2 (
               db->db, "SELECT ID, Code, Name FROM Languages;", -1, &db->lang_stmt, NULL) ==
             SQLITE_OK);
+
+  g_assert (sqlite3_prepare_v2 (db->db,
+                                "SELECT ID, Title, Tags FROM Texts WHERE LanguageID = ?;",
+                                -1,
+                                &db->text_by_lang_stmt,
+                                NULL) == SQLITE_OK);
+}
+
+static void
+free_sql_statements (lr_database_t *db)
+{
+  sqlite3_finalize (db->lang_stmt);
+  sqlite3_finalize (db->text_by_lang_stmt);
 }
 
 lr_database_t *
@@ -42,6 +59,8 @@ lr_database_close (lr_database_t *db)
 {
   g_return_if_fail (db != NULL);
   g_return_if_fail (db->db != NULL);
+
+  free_sql_statements (db);
 
   sqlite3_close (db->db);
 
@@ -72,11 +91,52 @@ lr_database_get_languages (lr_database_t *db)
 }
 
 void
-lr_database_free_language (lr_language_t *lang)
+lr_database_language_free (lr_language_t *lang)
 {
   g_return_if_fail (lang != NULL);
 
   g_free (lang->code);
   g_free (lang->name);
+}
+
+GList *
+lr_database_get_texts (lr_database_t *db, int lang_id)
+{
+  g_assert (db != NULL);
+
+  GList *text_list = NULL;
+
+  sqlite3_stmt *stmt = db->text_by_lang_stmt;
+  sqlite3_reset (stmt);
+
+  sqlite3_bind_int (stmt, 1, lang_id);
+
+  while (sqlite3_step (stmt) == SQLITE_ROW)
+    {
+      lr_text_t *text = malloc (sizeof (lr_text_t));
+      text->id = sqlite3_column_int (stmt, 0);
+      text->lang_id = lang_id;
+
+      text->title = g_strdup ((gchar *)sqlite3_column_text (stmt, 1));
+      text->tags = g_strdup ((gchar *)sqlite3_column_text (stmt, 2));
+
+      text->text = NULL; /* Until explicitly loaded */
+
+      text_list = g_list_append (text_list, text);
+    }
+
+  return text_list;
+}
+
+void
+lr_database_text_free (lr_text_t *text)
+{
+  g_assert (text != NULL);
+
+  g_free (text->title);
+  g_free (text->tags);
+
+  if (text->text != NULL)
+    g_free (text->text);
 }
 
