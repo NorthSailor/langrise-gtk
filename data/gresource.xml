@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+	<gresource prefix="/com/langrise/Langrise">
+		<file>style.css</file>
+		<file>lr-main-window.ui</file>
+		<file>lr-text-selector.ui</file>
+		<file>logo256.png</file>
+		<file>license.txt</file>
+	</gresource>
+</gresources>
