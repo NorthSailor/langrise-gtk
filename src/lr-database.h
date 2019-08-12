@@ -21,6 +21,8 @@ void lr_database_populate_texts (LrDatabase *self, GListStore *store, LrLanguage
 
 void lr_database_load_text (LrDatabase *self, LrText *text);
 
+void lr_database_delete_text (LrDatabase *self, LrText *text);
+
 G_END_DECLS
 
 #endif /* _lr_database_h */

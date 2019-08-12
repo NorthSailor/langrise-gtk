@@ -17,6 +17,9 @@ struct _LrDatabase
 
   /* Get text for a text by ID */
   sqlite3_stmt *text_text_by_id;
+
+  /* Delete text by ID */
+  sqlite3_stmt *delete_text_by_id;
 };
 
 enum
@@ -43,6 +46,10 @@ prepare_sql_statements (LrDatabase *db)
   g_assert (sqlite3_prepare_v2 (
               db->db, "SELECT Text FROM Texts WHERE ID = ?;", -1, &db->text_text_by_id, NULL) ==
             SQLITE_OK);
+
+  g_assert (sqlite3_prepare_v2 (
+              db->db, "DELETE FROM Texts WHERE ID = ?;", -1, &db->delete_text_by_id, NULL) ==
+            SQLITE_OK);
 }
 
 static void
@@ -51,6 +58,7 @@ free_sql_statements (LrDatabase *db)
   sqlite3_finalize (db->lang_stmt);
   sqlite3_finalize (db->text_by_lang_stmt);
   sqlite3_finalize (db->text_text_by_id);
+  sqlite3_finalize (db->delete_text_by_id);
 }
 
 static void
@@ -192,4 +200,17 @@ lr_database_load_text (LrDatabase *self, LrText *text)
 
   const gchar *text_string = (const gchar *)sqlite3_column_text (stmt, 0);
   lr_text_set_text (text, text_string);
+}
+
+void
+lr_database_delete_text (LrDatabase *self, LrText *text)
+{
+  g_assert (LR_IS_DATABASE (self));
+  g_assert (LR_IS_TEXT (text));
+
+  sqlite3_stmt *stmt = self->delete_text_by_id;
+  sqlite3_reset (stmt);
+  sqlite3_bind_int (stmt, 1, lr_text_get_id (text));
+
+  g_assert (sqlite3_step (stmt) == SQLITE_DONE);
 }

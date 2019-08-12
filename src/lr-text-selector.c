@@ -16,10 +16,17 @@ struct _LrTextSelector
 
   GListStore *text_store;
 
+  int selected_index;
   LrText *selected_text; /* Currently selected text or NULL */
 };
 
 G_DEFINE_TYPE (LrTextSelector, lr_text_selector, GTK_TYPE_BOX)
+
+static void
+populate_text_list (LrTextSelector *self)
+{
+  lr_database_populate_texts (self->db, self->text_store, self->lang);
+}
 
 static void
 new_text_cb (LrTextSelector *self, GtkWidget *button)
@@ -44,7 +51,34 @@ edit_text_cb (LrTextSelector *self, GtkWidget *button)
 static void
 delete_text_cb (LrTextSelector *self, GtkWidget *button)
 {
-  g_message ("Delete text");
+  g_assert (self->selected_index >= 0);
+  g_assert (LR_IS_TEXT (self->selected_text));
+
+  GtkWidget *message_box = gtk_message_dialog_new (
+    GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (self))),
+    GTK_DIALOG_USE_HEADER_BAR | GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+    GTK_MESSAGE_WARNING,
+    GTK_BUTTONS_YES_NO,
+    "Delete text '%s'?",
+    lr_text_get_title (self->selected_text));
+
+  int answer = gtk_dialog_run (GTK_DIALOG (message_box));
+  gtk_widget_destroy (message_box);
+
+  switch (answer)
+    {
+    case GTK_RESPONSE_YES:
+      lr_database_delete_text (self->db, self->selected_text);
+      g_list_store_remove (self->text_store, self->selected_index);
+      break;
+    case GTK_RESPONSE_NO:
+    case GTK_RESPONSE_CANCEL:
+    case GTK_RESPONSE_NONE:
+    default:
+      break;
+    }
+
+  populate_text_list (self);
 }
 
 static GtkWidget *
@@ -71,12 +105,6 @@ create_widget_for_text (LrText *text, gpointer user_data)
 }
 
 static void
-populate_text_list (LrTextSelector *self)
-{
-  lr_database_populate_texts (self->db, self->text_store, self->lang);
-}
-
-static void
 selection_changed_cb (GtkListBox *box, LrTextSelector *self)
 {
   g_assert (LR_IS_TEXT_SELECTOR (self));
@@ -89,12 +117,21 @@ selection_changed_cb (GtkListBox *box, LrTextSelector *self)
   gtk_widget_set_sensitive (self->edit_button, row != NULL);
   gtk_widget_set_sensitive (self->delete_button, row != NULL);
 
+  /* Unref the previously selected text */
+  g_clear_object (&self->selected_text);
+
   /* Update the selected text */
   if (row == NULL)
-    self->selected_text = NULL;
+    {
+      self->selected_index = -1;
+      self->selected_text = NULL;
+    }
   else
-    self->selected_text =
-      g_list_model_get_item (G_LIST_MODEL (self->text_store), gtk_list_box_row_get_index (row));
+    {
+      self->selected_index = gtk_list_box_row_get_index (row);
+      self->selected_text =
+        g_list_model_get_item (G_LIST_MODEL (self->text_store), self->selected_index);
+    }
 }
 
 static void
@@ -122,6 +159,7 @@ lr_text_selector_finalize (GObject *obj)
 
   LrTextSelector *self = LR_TEXT_SELECTOR (obj);
 
+  g_clear_object (&self->selected_text);
   g_clear_object (&self->text_store);
 }
 
