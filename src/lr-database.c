@@ -117,36 +117,28 @@ lr_database_new (gchar *path)
   return g_object_new (LR_TYPE_DATABASE, "path", path, NULL);
 }
 
-GList *
-lr_database_get_languages (LrDatabase *db)
-{
-  g_return_val_if_fail (db != NULL, NULL);
-
-  GList *lang_list = NULL;
-
-  sqlite3_reset (db->lang_stmt);
-
-  while (sqlite3_step (db->lang_stmt) == SQLITE_ROW)
-    {
-      lr_language_t *lang = malloc (sizeof (lr_language_t));
-      lang->id = sqlite3_column_int (db->lang_stmt, 0);
-
-      lang->code = g_strdup ((gchar *)sqlite3_column_text (db->lang_stmt, 1));
-      lang->name = g_strdup ((gchar *)sqlite3_column_text (db->lang_stmt, 2));
-
-      lang_list = g_list_append (lang_list, lang);
-    }
-
-  return lang_list;
-}
-
 void
-lr_database_language_free (lr_language_t *lang)
+lr_database_populate_languages (LrDatabase *self, GListStore *store)
 {
-  g_return_if_fail (lang != NULL);
+  g_assert (g_list_model_get_item_type (G_LIST_MODEL (store)) == LR_TYPE_LANGUAGE);
 
-  g_free (lang->code);
-  g_free (lang->name);
+  /* Free all the previous languages */
+  g_list_store_remove_all (store);
+
+  sqlite3_reset (self->lang_stmt);
+
+  while (sqlite3_step (self->lang_stmt) == SQLITE_ROW)
+    {
+      int id = sqlite3_column_int (self->lang_stmt, 0);
+      const gchar *code = (const gchar *)sqlite3_column_text (self->lang_stmt, 1);
+      const gchar *name = (const gchar *)sqlite3_column_text (self->lang_stmt, 2);
+
+      LrLanguage *lang = lr_language_new (id, code, name);
+
+      g_list_store_append (store, lang);
+
+      g_object_unref (lang);
+    }
 }
 
 GList *

@@ -12,7 +12,7 @@ G_DECLARE_FINAL_TYPE (LrTextSelector, lr_text_selector, LR, TEXT_SELECTOR, GtkBo
 GtkWidget *lr_text_selector_new ();
 
 void lr_text_selector_set_database (LrTextSelector *self, LrDatabase *db);
-void lr_text_selector_set_language (LrTextSelector *self, lr_language_t *new_language);
+void lr_text_selector_set_language (LrTextSelector *self, LrLanguage *new_language);
 
 G_END_DECLS
 

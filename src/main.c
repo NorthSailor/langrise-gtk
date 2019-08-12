@@ -43,7 +43,7 @@ main (int argc, char **argv)
 
   g_object_unref (application);
 
-  g_object_unref (db);
+  g_clear_object (&db);
 
   return status;
 }

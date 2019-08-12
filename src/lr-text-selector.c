@@ -118,16 +118,16 @@ lr_text_selector_set_database (LrTextSelector *self, LrDatabase *db)
 }
 
 void
-lr_text_selector_set_language (LrTextSelector *self, lr_language_t *next_language)
+lr_text_selector_set_language (LrTextSelector *self, LrLanguage *next_language)
 {
   g_assert (LR_IS_TEXT_SELECTOR (self));
   g_assert (self->db != NULL); /* We need a database connection first */
 
-  gchar *title = g_strdup_printf ("%s texts", next_language->name);
+  gchar *title = g_strdup_printf ("%s texts", lr_language_get_name (next_language));
   gtk_label_set_text (GTK_LABEL (self->title_label), title);
   g_free (title);
 
-  self->lang_id = next_language->id;
+  self->lang_id = lr_language_get_id (next_language);
 
   populate_text_list (self);
 }

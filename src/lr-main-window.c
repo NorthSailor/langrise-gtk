@@ -26,8 +26,8 @@ struct _LrMainWindow
   GMenu *lang_menu;
 
   /* The list of languages */
-  GList *lang_list;
-  lr_language_t *active_lang; /* Active language or NULL if none */
+  GListStore *lang_store;
+  LrLanguage *active_lang; /* Active language or NULL if none */
 
   /* State */
   /* id of the active language - Needed to select the correct language after a database repopulation */
@@ -63,20 +63,22 @@ switch_to_language (LrMainWindow *self, int lang_id)
       gtk_stack_set_visible_child_name (GTK_STACK (self->global_stack), "home");
 
       /* Find the new language */
-      lr_language_t *next_lang = NULL;
-      for (GList *l = self->lang_list; l != NULL; l = l->next)
+      LrLanguage *next_lang = NULL;
+      int n_languages = g_list_model_get_n_items (G_LIST_MODEL (self->lang_store));
+      for (int i = 0; i < n_languages; ++i)
         {
-          lr_language_t *lang = (lr_language_t *)l->data;
-          if (lang->id == lang_id)
+          LrLanguage *lang = g_list_model_get_item (G_LIST_MODEL (self->lang_store), i);
+          if (lr_language_get_id (lang) == lang_id)
             {
               next_lang = lang;
               break;
             }
+          g_object_unref (lang);
         }
 
       g_assert (next_lang != NULL); /* This would mean an invalid ID somehow */
 
-      gtk_label_set_text (GTK_LABEL (self->lang_name_label), next_lang->name);
+      gtk_label_set_text (GTK_LABEL (self->lang_name_label), lr_language_get_name (next_lang));
 
       /* TODO Alert the active subview */
 
@@ -91,7 +93,7 @@ static void
 populate_language_menu (LrMainWindow *self)
 {
   /* Should the button be visible? */
-  int n_languages = g_list_length (self->lang_list);
+  int n_languages = g_list_model_get_n_items (G_LIST_MODEL (self->lang_store));
   gtk_widget_set_visible (self->lang_menu_button, n_languages > 1);
 
   /* Create the menu model */
@@ -99,12 +101,14 @@ populate_language_menu (LrMainWindow *self)
 
   GMenu *lang_menu = g_menu_new ();
 
-  for (GList *l = self->lang_list; l != NULL; l = l->next)
+  for (int i = 0; i < n_languages; ++i)
     {
-      lr_language_t *lang = (lr_language_t *)l->data;
-      gchar *detailed_action_name = g_strdup_printf ("win.switchlanguage(%d)", lang->id);
-      g_menu_append (lang_menu, lang->name, detailed_action_name);
+      LrLanguage *lang = g_list_model_get_item (G_LIST_MODEL (self->lang_store), i);
+      gchar *detailed_action_name =
+        g_strdup_printf ("win.switchlanguage(%d)", lr_language_get_id (lang));
+      g_menu_append (lang_menu, lr_language_get_name (lang), detailed_action_name);
       g_free (detailed_action_name);
+      g_object_unref (lang);
     }
 
   GMenuItem *lang_menu_header =
@@ -223,7 +227,7 @@ lr_main_window_finalize (GObject *obj)
   LrMainWindow *self = LR_MAIN_WINDOW (obj);
 
   /* Free the language list */
-  g_list_free_full (self->lang_list, (GDestroyNotify)lr_database_language_free);
+  g_clear_object (&self->lang_store);
   G_OBJECT_CLASS (lr_main_window_parent_class)->finalize (obj);
 }
 
@@ -232,6 +236,8 @@ lr_main_window_init (LrMainWindow *window)
 {
   window->active_lang = NULL;
   window->lang_id = -1;
+
+  window->lang_store = g_list_store_new (LR_TYPE_LANGUAGE);
 
   gtk_widget_init_template (GTK_WIDGET (window));
 }
@@ -278,9 +284,7 @@ lr_main_window_set_database (LrMainWindow *self, LrDatabase *db)
   self->db = db;
 
   /* Free the existing list */
-  g_list_free_full (self->lang_list, (GDestroyNotify)lr_database_language_free);
-
-  self->lang_list = lr_database_get_languages (db);
+  lr_database_populate_languages (db, self->lang_store);
 
   populate_language_menu (self);
 
@@ -288,13 +292,14 @@ lr_main_window_set_database (LrMainWindow *self, LrDatabase *db)
   lr_text_selector_set_database (LR_TEXT_SELECTOR (self->text_selector), self->db);
 
   /* Select a language if we have any */
-  if (self->lang_list != NULL)
+  if (g_list_model_get_n_items (G_LIST_MODEL (self->lang_store)) > 0)
     {
       if (self->lang_id == -1)
         {
           /* There was no language selected. Pick the first one */
-          lr_language_t *first = (lr_language_t *)self->lang_list->data;
-          switch_to_language (self, first->id);
+          LrLanguage *first = g_list_model_get_item (G_LIST_MODEL (self->lang_store), 0);
+          switch_to_language (self, lr_language_get_id (first));
+          g_object_unref (first);
         }
       else
         {

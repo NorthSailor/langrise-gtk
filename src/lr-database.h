@@ -3,15 +3,11 @@
 
 #include <glib.h>
 #include <glib-object.h>
+#include <gio/gio.h>
+
+#include "lr-language.h"
 
 G_BEGIN_DECLS
-
-typedef struct
-{
-  int id;
-  gchar *code;
-  gchar *name;
-} lr_language_t;
 
 typedef struct
 {
@@ -34,9 +30,7 @@ G_DECLARE_FINAL_TYPE (LrDatabase, lr_database, LR, DATABASE, GObject)
 LrDatabase *lr_database_new (gchar *path);
 void lr_database_close (LrDatabase *self);
 
-GList *lr_database_get_languages (LrDatabase *self);
-
-void lr_database_language_free (lr_language_t *lang);
+void lr_database_populate_languages (LrDatabase *self, GListStore *store);
 
 GList *lr_database_get_texts (LrDatabase *self, int lang_id);
 void lr_database_text_free (lr_text_t *text);
