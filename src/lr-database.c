@@ -30,11 +30,12 @@ prepare_sql_statements (LrDatabase *db)
               db->db, "SELECT ID, Code, Name FROM Languages;", -1, &db->lang_stmt, NULL) ==
             SQLITE_OK);
 
-  g_assert (sqlite3_prepare_v2 (db->db,
-                                "SELECT ID, Title, Tags FROM Texts WHERE LanguageID = ?;",
-                                -1,
-                                &db->text_by_lang_stmt,
-                                NULL) == SQLITE_OK);
+  g_assert (sqlite3_prepare_v2 (
+              db->db,
+              "SELECT ID, Title, Tags FROM Texts WHERE LanguageID = ? ORDER BY Title ASC;",
+              -1,
+              &db->text_by_lang_stmt,
+              NULL) == SQLITE_OK);
 }
 
 static void
@@ -165,45 +166,4 @@ lr_database_populate_texts (LrDatabase *self, GListStore *store, LrLanguage *lan
       g_list_store_append (store, text);
       g_object_unref (text);
     }
-}
-
-GList *
-lr_database_get_texts (LrDatabase *db, int lang_id)
-{
-  g_assert (db != NULL);
-
-  GList *text_list = NULL;
-
-  sqlite3_stmt *stmt = db->text_by_lang_stmt;
-  sqlite3_reset (stmt);
-
-  sqlite3_bind_int (stmt, 1, lang_id);
-
-  while (sqlite3_step (stmt) == SQLITE_ROW)
-    {
-      lr_text_t *text = malloc (sizeof (lr_text_t));
-      text->id = sqlite3_column_int (stmt, 0);
-      text->lang_id = lang_id;
-
-      text->title = g_strdup ((gchar *)sqlite3_column_text (stmt, 1));
-      text->tags = g_strdup ((gchar *)sqlite3_column_text (stmt, 2));
-
-      text->text = NULL; /* Until explicitly loaded */
-
-      text_list = g_list_append (text_list, text);
-    }
-
-  return text_list;
-}
-
-void
-lr_database_text_free (lr_text_t *text)
-{
-  g_assert (text != NULL);
-
-  g_free (text->title);
-  g_free (text->tags);
-
-  if (text->text != NULL)
-    g_free (text->text);
 }
