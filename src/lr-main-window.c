@@ -49,6 +49,9 @@ enum
 static void
 switch_to_language (LrMainWindow *self, int lang_id)
 {
+  /* Free the previous active language, if any */
+  g_clear_object (&self->active_lang);
+
   if (lang_id == -1)
     {
       /* No languages mode */
@@ -73,7 +76,8 @@ switch_to_language (LrMainWindow *self, int lang_id)
               next_lang = lang;
               break;
             }
-          g_object_unref (lang);
+          else
+            g_object_unref (lang);
         }
 
       g_assert (next_lang != NULL); /* This would mean an invalid ID somehow */
@@ -225,6 +229,8 @@ static void
 lr_main_window_finalize (GObject *obj)
 {
   LrMainWindow *self = LR_MAIN_WINDOW (obj);
+
+  g_clear_object (&self->active_lang);
 
   /* Free the language list */
   g_clear_object (&self->lang_store);
