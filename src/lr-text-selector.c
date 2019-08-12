@@ -30,7 +30,9 @@ new_text_cb (LrTextSelector *self, GtkWidget *button)
 static void
 read_text_cb (LrTextSelector *self, GtkWidget *button)
 {
-  g_message ("Read text");
+  /* Load the text */
+  lr_database_load_text (self->db, self->selected_text);
+  g_message ("Read text with title '%s'", lr_text_get_text (self->selected_text));
 }
 
 static void

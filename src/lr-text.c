@@ -124,3 +124,19 @@ lr_text_get_tags (LrText *self)
   return self->tags;
 }
 
+const gchar *
+lr_text_get_text (LrText *self)
+{
+  g_assert (LR_IS_TEXT (self));
+  return self->text;
+}
+
+void
+lr_text_set_text (LrText *self, const gchar *text)
+{
+  g_assert (LR_IS_TEXT (self));
+
+  g_free (self->text);
+  self->text = g_strdup (text);
+}
+
