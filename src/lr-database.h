@@ -6,6 +6,7 @@
 #include <gio/gio.h>
 
 #include "lr-language.h"
+#include "lr-text.h"
 
 G_BEGIN_DECLS
 
@@ -31,6 +32,7 @@ LrDatabase *lr_database_new (gchar *path);
 void lr_database_close (LrDatabase *self);
 
 void lr_database_populate_languages (LrDatabase *self, GListStore *store);
+void lr_database_populate_texts (LrDatabase *self, GListStore *store, LrLanguage *language);
 
 GList *lr_database_get_texts (LrDatabase *self, int lang_id);
 void lr_database_text_free (lr_text_t *text);

@@ -6,9 +6,7 @@ struct _LrTextSelector
   GtkBox parent_instance;
 
   LrDatabase *db;
-
-  /* ID of the current language, used for filtering queries */
-  guint lang_id; /* -1 if none (edge case, only during initialization) */
+  LrLanguage *lang; /* Active language */
 
   GtkWidget *title_label;
   GtkWidget *read_button;
@@ -16,7 +14,9 @@ struct _LrTextSelector
   GtkWidget *delete_button;
   GtkWidget *list_box;
 
-  GList *text_list;
+  GListStore *text_store;
+
+  LrText *selected_text; /* Currently selected text or NULL */
 };
 
 G_DEFINE_TYPE (LrTextSelector, lr_text_selector, GTK_TYPE_BOX)
@@ -45,21 +45,54 @@ delete_text_cb (LrTextSelector *self, GtkWidget *button)
   g_message ("Delete text");
 }
 
+static GtkWidget *
+create_widget_for_text (LrText *text, gpointer user_data)
+{
+  GtkWidget *row = gtk_list_box_row_new ();
+
+  GtkBuilder *builder =
+    gtk_builder_new_from_resource ("/com/langrise/Langrise/lr-text-selector-row.ui");
+
+  GtkWidget *box = GTK_WIDGET (gtk_builder_get_object (builder, "box"));
+  GtkWidget *title_label = GTK_WIDGET (gtk_builder_get_object (builder, "title_label"));
+  GtkWidget *tags_label = GTK_WIDGET (gtk_builder_get_object (builder, "tags_label"));
+
+  gtk_label_set_text (GTK_LABEL (title_label), lr_text_get_title (text));
+  gtk_label_set_text (GTK_LABEL (tags_label), lr_text_get_tags (text));
+
+  gtk_container_add (GTK_CONTAINER (row), box);
+  gtk_widget_show_all (row);
+
+  g_object_unref (builder);
+
+  return row;
+}
+
 static void
 populate_text_list (LrTextSelector *self)
 {
-  /* Free the previous list */
-  g_list_free_full (self->text_list, (GDestroyNotify)lr_database_text_free);
+  lr_database_populate_texts (self->db, self->text_store, self->lang);
+}
 
-  /* TODO Fill the list box with database query results */
-  self->text_list = lr_database_get_texts (self->db, self->lang_id);
+static void
+selection_changed_cb (GtkListBox *box, LrTextSelector *self)
+{
+  g_assert (LR_IS_TEXT_SELECTOR (self));
+  g_assert (GTK_IS_LIST_BOX (box));
 
+  /* If no items are selected, disable the editing controls */
+  GtkListBoxRow *row = gtk_list_box_get_selected_row (box);
 
-  for (GList *l = self->text_list; l != NULL; l = l->next)
-    {
-      lr_text_t *text = (lr_text_t *)l->data;
-      g_message ("Found text (ID %d) '%s' with tags '%s'", text->id, text->title, text->tags);
-    }
+  gtk_widget_set_sensitive (self->read_button, row != NULL);
+  gtk_widget_set_sensitive (self->edit_button, row != NULL);
+  gtk_widget_set_sensitive (self->delete_button, row != NULL);
+
+  /* Update the selected text */
+  if (row == NULL)
+    self->selected_text = NULL;
+  else
+    self->selected_text =
+      g_list_model_get_item (G_LIST_MODEL (self->text_store), gtk_list_box_row_get_index (row));
 }
 
 static void
@@ -67,8 +100,16 @@ lr_text_selector_init (LrTextSelector *self)
 {
   gtk_widget_init_template (GTK_WIDGET (self));
   self->db = NULL;
-  self->lang_id = -1;
+  self->lang = NULL;
 
+  self->text_store = g_list_store_new (LR_TYPE_TEXT);
+
+  gtk_list_box_bind_model (GTK_LIST_BOX (self->list_box),
+                           G_LIST_MODEL (self->text_store),
+                           (GtkListBoxCreateWidgetFunc)create_widget_for_text,
+                           NULL,
+                           NULL);
+  gtk_list_box_set_selection_mode (GTK_LIST_BOX (self->list_box), GTK_SELECTION_SINGLE);
   gtk_list_box_set_placeholder (GTK_LIST_BOX (self->list_box), gtk_label_new ("No texts found"));
 }
 
@@ -78,7 +119,8 @@ lr_text_selector_finalize (GObject *obj)
   g_assert (LR_IS_TEXT_SELECTOR (obj));
 
   LrTextSelector *self = LR_TEXT_SELECTOR (obj);
-  g_list_free_full (self->text_list, (GDestroyNotify)lr_database_text_free);
+
+  g_clear_object (&self->text_store);
 }
 
 static void
@@ -101,6 +143,8 @@ lr_text_selector_class_init (LrTextSelectorClass *klass)
   gtk_widget_class_bind_template_callback (widget_class, read_text_cb);
   gtk_widget_class_bind_template_callback (widget_class, edit_text_cb);
   gtk_widget_class_bind_template_callback (widget_class, delete_text_cb);
+
+  gtk_widget_class_bind_template_callback (widget_class, selection_changed_cb);
 }
 
 GtkWidget *
@@ -127,8 +171,15 @@ lr_text_selector_set_language (LrTextSelector *self, LrLanguage *next_language)
   gtk_label_set_text (GTK_LABEL (self->title_label), title);
   g_free (title);
 
-  self->lang_id = lr_language_get_id (next_language);
+  self->lang = next_language;
+  self->selected_text = NULL;
 
   populate_text_list (self);
+
+  /* GtkListBox does not emit a selection-changed signal when its contents change
+   * through the model, therefore we call our callback to make sure the controls 
+   * correctly represent the current selection (namely, that no row is selected when 
+   * switching languages or at startup) */
+  selection_changed_cb (GTK_LIST_BOX (self->list_box), self);
 }
 

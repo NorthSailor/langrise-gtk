@@ -141,6 +141,32 @@ lr_database_populate_languages (LrDatabase *self, GListStore *store)
     }
 }
 
+void
+lr_database_populate_texts (LrDatabase *self, GListStore *store, LrLanguage *language)
+{
+  g_assert (g_list_model_get_item_type (G_LIST_MODEL (store)) == LR_TYPE_TEXT);
+
+  /* Free all previous texts */
+  g_list_store_remove_all (store);
+
+  sqlite3_stmt *stmt = self->text_by_lang_stmt;
+  sqlite3_reset (stmt);
+
+  sqlite3_bind_int (stmt, 1, lr_language_get_id (language));
+
+  while (sqlite3_step (stmt) == SQLITE_ROW)
+    {
+      int id = sqlite3_column_int (stmt, 0);
+      const gchar *title = (const gchar *)sqlite3_column_text (stmt, 1);
+      const gchar *tags = (const gchar *)sqlite3_column_text (stmt, 2);
+
+      LrText *text = lr_text_new (id, language, title, tags);
+
+      g_list_store_append (store, text);
+      g_object_unref (text);
+    }
+}
+
 GList *
 lr_database_get_texts (LrDatabase *db, int lang_id)
 {
