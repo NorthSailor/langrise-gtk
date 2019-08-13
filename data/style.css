@@ -1,5 +1,5 @@
-reader.textview {
-	font: 30px serif;
+textview.reader {
+	font: 24px sans;
 }
 
 popover {

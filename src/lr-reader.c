@@ -3,16 +3,16 @@
 
 struct _LrReader
 {
-  GtkBin parent_instance;
+  GtkBox parent_instance;
 
-  // instance variables
+  LrText *text;
+
   GtkWidget *textview;
-
   GtkWidget *word_popover;
   GtkWidget *word_label;
 };
 
-G_DEFINE_TYPE (LrReader, lr_reader, GTK_TYPE_BIN)
+G_DEFINE_TYPE (LrReader, lr_reader, GTK_TYPE_BOX)
 
 static gboolean
 lr_reader_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
@@ -114,12 +114,7 @@ add_form_button (GtkWidget *button, gpointer data)
 static void
 lr_reader_init (LrReader *reader)
 {
-  reader->textview = gtk_text_view_new ();
-
-  GtkWidget *scrolled = gtk_scrolled_window_new (NULL, NULL);
-  gtk_container_add (GTK_CONTAINER (scrolled), reader->textview);
-  gtk_container_add (GTK_CONTAINER (reader), scrolled);
-
+  gtk_widget_init_template (GTK_WIDGET (reader));
   gtk_widget_add_events (GTK_WIDGET (reader), GDK_KEY_PRESS_MASK);
   gtk_widget_set_can_focus (GTK_WIDGET (reader), TRUE);
 
@@ -153,7 +148,10 @@ lr_reader_init (LrReader *reader)
 static void
 lr_reader_class_init (LrReaderClass *klass)
 {
-  /* Property/signal definitions */
+  GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
+  gtk_widget_class_set_template_from_resource (widget_class, "/com/langrise/Langrise/lr-reader.ui");
+
+  gtk_widget_class_bind_template_child (widget_class, LrReader, textview);
 }
 
 GtkWidget *
@@ -163,8 +161,9 @@ lr_reader_new (void)
 }
 
 void
-lr_reader_set_text (LrReader *reader, const gchar *str)
+lr_reader_set_text (LrReader *self, LrText *text)
 {
-  GtkTextBuffer *text_buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (reader->textview));
-  gtk_text_buffer_set_text (text_buffer, str, strlen (str));
+  self->text = text;
+  GtkTextBuffer *text_buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (self->textview));
+  gtk_text_buffer_set_text (text_buffer, lr_text_get_text (text), -1);
 }

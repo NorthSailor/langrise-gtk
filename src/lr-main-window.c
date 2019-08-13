@@ -1,5 +1,6 @@
 #include "lr-main-window.h"
 #include "lr-database.h"
+#include "lr-reader.h"
 #include "lr-text-selector.h"
 
 struct _LrMainWindow
@@ -18,10 +19,12 @@ struct _LrMainWindow
   GtkWidget *global_stack;
   GtkWidget *home_stack;
   GtkWidget *header_stack;
+  GtkWidget *text_title_label;
 
   GtkWidget *home_switcher;
 
   GtkWidget *text_selector;
+  GtkWidget *reader;
 
   GMenu *lang_menu;
 
@@ -146,7 +149,8 @@ switch_to_mode (LrMainWindow *self, guint mode)
     {
     case MODE_READING:
       {
-        gtk_stack_set_visible_child_name (GTK_STACK (self->global_stack), "reading");
+        gtk_stack_set_visible_child_full (
+          GTK_STACK (self->global_stack), "reading", GTK_STACK_TRANSITION_TYPE_SLIDE_LEFT);
         gtk_stack_set_visible_child_name (GTK_STACK (self->header_stack), "reading_header");
         gtk_widget_hide (self->lang_menu_button);
         gtk_widget_show (self->back_button);
@@ -154,7 +158,8 @@ switch_to_mode (LrMainWindow *self, guint mode)
       break;
     case MODE_HOME:
       {
-        gtk_stack_set_visible_child_name (GTK_STACK (self->global_stack), "home");
+        gtk_stack_set_visible_child_full (
+          GTK_STACK (self->global_stack), "home", GTK_STACK_TRANSITION_TYPE_SLIDE_RIGHT);
         gtk_stack_set_visible_child_name (GTK_STACK (self->header_stack), "home_header");
         gtk_widget_show (self->lang_menu_button);
         gtk_widget_set_sensitive (self->home_switcher, TRUE);
@@ -162,6 +167,27 @@ switch_to_mode (LrMainWindow *self, guint mode)
       }
       break;
     }
+}
+
+static void
+go_back_cb (LrMainWindow *self, GtkButton *button)
+{
+  switch_to_mode (self, MODE_HOME);
+}
+
+static void
+read_text_cb (LrTextSelector *selector, LrText *text, LrMainWindow *self)
+{
+  g_assert (LR_IS_TEXT_SELECTOR (selector));
+  g_assert (LR_IS_TEXT (text));
+  g_assert (LR_IS_MAIN_WINDOW (self));
+
+  lr_database_load_text (self->db, text);
+
+  lr_reader_set_text (LR_READER (self->reader), text);
+
+  gtk_label_set_text (GTK_LABEL (self->text_title_label), lr_text_get_title (text));
+  switch_to_mode (self, MODE_READING);
 }
 
 static void
@@ -222,6 +248,13 @@ lr_main_window_constructed (GObject *obj)
   self->text_selector = lr_text_selector_new ();
   gtk_stack_add_titled (GTK_STACK (self->home_stack), self->text_selector, "texts", "Texts");
 
+  /* Add the reader to the global stack view */
+  self->reader = lr_reader_new ();
+  gtk_stack_add_named (GTK_STACK (self->global_stack), self->reader, "reading");
+
+  /* Connect the "read-text" signal from the selector */
+  g_signal_connect (self->text_selector, "read-text", (GCallback)read_text_cb, self);
+
   G_OBJECT_CLASS (lr_main_window_parent_class)->constructed (obj);
 }
 
@@ -267,8 +300,10 @@ lr_main_window_class_init (LrMainWindowClass *klass)
   gtk_widget_class_bind_template_child (widget_class, LrMainWindow, home_stack);
   gtk_widget_class_bind_template_child (widget_class, LrMainWindow, header_stack);
   gtk_widget_class_bind_template_child (widget_class, LrMainWindow, home_switcher);
+  gtk_widget_class_bind_template_child (widget_class, LrMainWindow, text_title_label);
 
   gtk_widget_class_bind_template_callback (widget_class, about_cb);
+  gtk_widget_class_bind_template_callback (widget_class, go_back_cb);
   gtk_widget_class_bind_template_callback (widget_class, quit_cb);
 }
 

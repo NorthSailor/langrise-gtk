@@ -23,6 +23,17 @@ struct _LrTextSelector
 
 G_DEFINE_TYPE (LrTextSelector, lr_text_selector, GTK_TYPE_BOX)
 
+/* Signals */
+enum
+{
+  READ_TEXT,
+  N_SIGNALS
+};
+
+static guint obj_signals[N_SIGNALS] = {
+  0,
+};
+
 static void
 populate_text_list (LrTextSelector *self)
 {
@@ -37,6 +48,8 @@ new_text_cb (LrTextSelector *self, GtkWidget *button)
 
   GtkWidget *text_dialog = lr_text_dialog_new (new_text);
   gtk_window_set_title (GTK_WINDOW (text_dialog), "New text");
+  gtk_window_set_transient_for (GTK_WINDOW (text_dialog),
+                                GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (self))));
 
   int response = gtk_dialog_run (GTK_DIALOG (text_dialog));
   gtk_widget_destroy (text_dialog);
@@ -53,7 +66,8 @@ new_text_cb (LrTextSelector *self, GtkWidget *button)
 static void
 read_text_cb (LrTextSelector *self, GtkWidget *button)
 {
-  g_message ("Read text");
+  g_assert (LR_IS_TEXT (self->selected_text));
+  g_signal_emit (self, obj_signals[READ_TEXT], 0, self->selected_text);
 }
 
 static void
@@ -71,6 +85,9 @@ edit_text_cb (LrTextSelector *self, GtkWidget *button)
   gchar *title = g_strdup_printf ("Edit text '%s'", lr_text_get_title (self->selected_text));
   gtk_window_set_title (GTK_WINDOW (text_dialog), title);
   g_free (title);
+
+  gtk_window_set_transient_for (GTK_WINDOW (text_dialog),
+                                GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (self))));
 
   int response = gtk_dialog_run (GTK_DIALOG (text_dialog));
 
@@ -202,6 +219,18 @@ lr_text_selector_class_init (LrTextSelectorClass *klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
   object_class->finalize = lr_text_selector_finalize;
+
+  /* Register the signal */
+  obj_signals[READ_TEXT] = g_signal_new ("read-text",
+                                         G_TYPE_FROM_CLASS (klass),
+                                         G_SIGNAL_RUN_LAST,
+                                         0,
+                                         NULL,
+                                         NULL,
+                                         NULL,
+                                         G_TYPE_NONE,
+                                         1,
+                                         LR_TYPE_TEXT);
 
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
   gtk_widget_class_set_template_from_resource (widget_class,
