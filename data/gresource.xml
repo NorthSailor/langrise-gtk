@@ -5,6 +5,7 @@
 		<file>lr-main-window.ui</file>
 		<file>lr-text-selector.ui</file>
 		<file>lr-text-selector-row.ui</file>
+		<file>lr-text-dialog.ui</file>
 		<file>logo256.png</file>
 		<file>license.txt</file>
 	</gresource>

@@ -1,4 +1,4 @@
-project('langrise', 'c')
+project('langrise', 'c', 'vala')
 
 glibdep = dependency('glib-2.0')
 gtkdep = dependency('gtk+-3.0')
@@ -27,6 +27,8 @@ executable('langrise',
 		'src/lr-main-window.h',
 		'src/lr-text.h',
 		'src/lr-text.c',
+		'src/lr-text-dialog.c',
+		'src/lr-text-dialog.h',
 		'src/lr-text-selector.c',
 		'src/lr-text-selector.h',
 	],

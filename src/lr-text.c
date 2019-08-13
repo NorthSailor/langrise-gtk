@@ -61,12 +61,10 @@ lr_text_set_property (GObject *object, guint property_id, const GValue *value, G
       g_object_ref (self->language);
       break;
     case PROP_TITLE:
-      g_free (self->title);
-      self->title = g_value_dup_string (value);
+      lr_text_set_title (self, g_value_get_string (value));
       break;
     case PROP_TAGS:
-      g_free (self->tags);
-      self->tags = g_value_dup_string (value);
+      lr_text_set_tags (self, g_value_get_string (value));
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -112,16 +110,36 @@ lr_text_get_id (LrText *self)
   return self->id;
 }
 
+int
+lr_text_get_language_id (LrText *self)
+{
+  return lr_language_get_id (self->language);
+}
+
 const gchar *
 lr_text_get_title (LrText *self)
 {
   return self->title;
 }
 
+void
+lr_text_set_title (LrText *self, const gchar *title)
+{
+  g_free (self->title);
+  self->title = g_strdup (title);
+}
+
 const gchar *
 lr_text_get_tags (LrText *self)
 {
   return self->tags;
+}
+
+void
+lr_text_set_tags (LrText *self, const gchar *tags)
+{
+  g_free (self->tags);
+  self->tags = g_strdup (tags);
 }
 
 const gchar *

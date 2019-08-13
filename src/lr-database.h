@@ -20,7 +20,8 @@ void lr_database_populate_languages (LrDatabase *self, GListStore *store);
 void lr_database_populate_texts (LrDatabase *self, GListStore *store, LrLanguage *language);
 
 void lr_database_load_text (LrDatabase *self, LrText *text);
-
+void lr_database_insert_text (LrDatabase *self, LrText *text);
+void lr_database_update_text (LrDatabase *self, LrText *text);
 void lr_database_delete_text (LrDatabase *self, LrText *text);
 
 G_END_DECLS

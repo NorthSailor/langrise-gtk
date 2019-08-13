@@ -1,5 +1,6 @@
 #include "lr-text-selector.h"
 #include "lr-text.h"
+#include "lr-text-dialog.h"
 
 struct _LrTextSelector
 {
@@ -31,21 +32,55 @@ populate_text_list (LrTextSelector *self)
 static void
 new_text_cb (LrTextSelector *self, GtkWidget *button)
 {
-  g_message ("New text");
+  LrText *new_text = lr_text_new (0, self->lang, "", "");
+  lr_text_set_text (new_text, "");
+
+  GtkWidget *text_dialog = lr_text_dialog_new (new_text);
+  gtk_window_set_title (GTK_WINDOW (text_dialog), "New text");
+
+  int response = gtk_dialog_run (GTK_DIALOG (text_dialog));
+  gtk_widget_destroy (text_dialog);
+
+  if (response == GTK_RESPONSE_OK)
+    {
+      lr_database_insert_text (self->db, new_text);
+      populate_text_list (self);
+    }
+
+  g_object_unref (new_text);
 }
 
 static void
 read_text_cb (LrTextSelector *self, GtkWidget *button)
 {
-  /* Load the text */
-  lr_database_load_text (self->db, self->selected_text);
-  g_message ("Read text with title '%s'", lr_text_get_text (self->selected_text));
+  g_message ("Read text");
 }
 
 static void
 edit_text_cb (LrTextSelector *self, GtkWidget *button)
 {
-  g_message ("Edit text");
+  g_assert (self->selected_index >= 0);
+  g_assert (LR_IS_TEXT (self->selected_text));
+
+  /* Load the text if it's not loaded yet. */
+  if (lr_text_get_text (self->selected_text) == NULL)
+    lr_database_load_text (self->db, self->selected_text);
+
+  GtkWidget *text_dialog = lr_text_dialog_new (self->selected_text);
+
+  gchar *title = g_strdup_printf ("Edit text '%s'", lr_text_get_title (self->selected_text));
+  gtk_window_set_title (GTK_WINDOW (text_dialog), title);
+  g_free (title);
+
+  int response = gtk_dialog_run (GTK_DIALOG (text_dialog));
+
+  gtk_widget_destroy (text_dialog);
+
+  if (response == GTK_RESPONSE_OK)
+    {
+      lr_database_update_text (self->db, self->selected_text);
+      populate_text_list (self);
+    }
 }
 
 static void
@@ -70,6 +105,7 @@ delete_text_cb (LrTextSelector *self, GtkWidget *button)
     case GTK_RESPONSE_YES:
       lr_database_delete_text (self->db, self->selected_text);
       g_list_store_remove (self->text_store, self->selected_index);
+      populate_text_list (self);
       break;
     case GTK_RESPONSE_NO:
     case GTK_RESPONSE_CANCEL:
@@ -77,8 +113,6 @@ delete_text_cb (LrTextSelector *self, GtkWidget *button)
     default:
       break;
     }
-
-  populate_text_list (self);
 }
 
 static GtkWidget *

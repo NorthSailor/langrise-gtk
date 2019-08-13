@@ -18,6 +18,12 @@ struct _LrDatabase
   /* Get text for a text by ID */
   sqlite3_stmt *text_text_by_id;
 
+  /* Insert a text with title, tags, and text */
+  sqlite3_stmt *insert_text;
+
+  /* Update a text by its ID */
+  sqlite3_stmt *update_text_by_id;
+
   /* Delete text by ID */
   sqlite3_stmt *delete_text_by_id;
 };
@@ -47,6 +53,19 @@ prepare_sql_statements (LrDatabase *db)
               db->db, "SELECT Text FROM Texts WHERE ID = ?;", -1, &db->text_text_by_id, NULL) ==
             SQLITE_OK);
 
+  g_assert (
+    sqlite3_prepare_v2 (db->db,
+                        "INSERT INTO Texts (LanguageID, Title, Tags, Text) VALUES (?, ?, ?, ?)",
+                        -1,
+                        &db->insert_text,
+                        NULL) == SQLITE_OK);
+
+  g_assert (sqlite3_prepare_v2 (db->db,
+                                "UPDATE Texts SET Title = ?, Tags = ?, Text = ? WHERE ID = ?;",
+                                -1,
+                                &db->update_text_by_id,
+                                NULL) == SQLITE_OK);
+
   g_assert (sqlite3_prepare_v2 (
               db->db, "DELETE FROM Texts WHERE ID = ?;", -1, &db->delete_text_by_id, NULL) ==
             SQLITE_OK);
@@ -58,6 +77,8 @@ free_sql_statements (LrDatabase *db)
   sqlite3_finalize (db->lang_stmt);
   sqlite3_finalize (db->text_by_lang_stmt);
   sqlite3_finalize (db->text_text_by_id);
+  sqlite3_finalize (db->insert_text);
+  sqlite3_finalize (db->update_text_by_id);
   sqlite3_finalize (db->delete_text_by_id);
 }
 
@@ -200,6 +221,45 @@ lr_database_load_text (LrDatabase *self, LrText *text)
 
   const gchar *text_string = (const gchar *)sqlite3_column_text (stmt, 0);
   lr_text_set_text (text, text_string);
+}
+
+void
+lr_database_insert_text (LrDatabase *self, LrText *text)
+{
+  g_assert (LR_IS_DATABASE (self));
+  g_assert (LR_IS_TEXT (text));
+
+  sqlite3_stmt *stmt = self->insert_text;
+
+  sqlite3_reset (stmt);
+
+  sqlite3_bind_int (stmt, 1, lr_text_get_language_id (text));
+  sqlite3_bind_text (stmt, 2, lr_text_get_title (text), -1, NULL);
+  sqlite3_bind_text (stmt, 3, lr_text_get_tags (text), -1, NULL);
+  sqlite3_bind_text (stmt, 4, lr_text_get_text (text), -1, NULL);
+
+  g_assert (sqlite3_step (stmt) == SQLITE_DONE);
+}
+
+void
+lr_database_update_text (LrDatabase *self, LrText *text)
+{
+  g_assert (LR_IS_DATABASE (self));
+  g_assert (LR_IS_TEXT (text));
+
+  /* Make sure the text has been loaded first */
+  g_assert (lr_text_get_text (text) != NULL);
+
+  sqlite3_stmt *stmt = self->update_text_by_id;
+  sqlite3_reset (stmt);
+
+  sqlite3_bind_text (stmt, 1, lr_text_get_title (text), -1, NULL);
+  sqlite3_bind_text (stmt, 2, lr_text_get_tags (text), -1, NULL);
+  sqlite3_bind_text (stmt, 3, lr_text_get_text (text), -1, NULL);
+
+  sqlite3_bind_int (stmt, 4, lr_text_get_id (text));
+
+  g_assert (sqlite3_step (stmt) == SQLITE_DONE);
 }
 
 void
