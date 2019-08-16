@@ -12,7 +12,8 @@ G_DECLARE_FINAL_TYPE (LrText, lr_text, LR, TEXT, GObject)
 LrText *lr_text_new (int id, LrLanguage *language, const gchar *title, const gchar *tags);
 
 int lr_text_get_id (LrText *self);
-int lr_text_get_language_id (LrText *self);
+
+LrLanguage *lr_text_get_language (LrText *self);
 
 const gchar *lr_text_get_title (LrText *self);
 void lr_text_set_title (LrText *self, const gchar *title);

@@ -1,4 +1,5 @@
 #include "lr-reader.h"
+#include "lr-splitter.h"
 #include <gtk/gtk.h>
 
 struct _LrReader
@@ -7,9 +8,13 @@ struct _LrReader
 
   LrText *text;
 
+  LrSplitter *splitter;
+
   GtkWidget *textview;
   GtkWidget *word_popover;
   GtkWidget *word_label;
+
+  GtkTextTag *word_tag;
 };
 
 G_DEFINE_TYPE (LrReader, lr_reader, GTK_TYPE_BOX)
@@ -96,15 +101,6 @@ lr_reader_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer
 }
 
 static void
-apply_textview_style (GtkWidget *view)
-{
-  gtk_text_view_set_left_margin (GTK_TEXT_VIEW (view), 20);
-  gtk_text_view_set_right_margin (GTK_TEXT_VIEW (view), 20);
-  gtk_text_view_set_top_margin (GTK_TEXT_VIEW (view), 20);
-  gtk_text_view_set_bottom_margin (GTK_TEXT_VIEW (view), 20);
-}
-
-static void
 add_form_button (GtkWidget *button, gpointer data)
 {
   GtkPopover *popover = GTK_POPOVER (data);
@@ -112,37 +108,42 @@ add_form_button (GtkWidget *button, gpointer data)
 }
 
 static void
-lr_reader_init (LrReader *reader)
+lr_reader_init (LrReader *self)
 {
-  gtk_widget_init_template (GTK_WIDGET (reader));
-  gtk_widget_add_events (GTK_WIDGET (reader), GDK_KEY_PRESS_MASK);
-  gtk_widget_set_can_focus (GTK_WIDGET (reader), TRUE);
+  gtk_widget_init_template (GTK_WIDGET (self));
+  gtk_widget_add_events (GTK_WIDGET (self), GDK_KEY_PRESS_MASK);
+  gtk_widget_set_can_focus (GTK_WIDGET (self), TRUE);
 
-  gtk_text_view_set_editable (GTK_TEXT_VIEW (reader->textview), FALSE);
-  gtk_text_view_set_cursor_visible (GTK_TEXT_VIEW (reader->textview), FALSE);
+  gtk_text_view_set_editable (GTK_TEXT_VIEW (self->textview), FALSE);
+  gtk_text_view_set_cursor_visible (GTK_TEXT_VIEW (self->textview), FALSE);
 
-  gtk_text_view_set_wrap_mode (GTK_TEXT_VIEW (reader->textview), GTK_WRAP_WORD);
+  gtk_text_view_set_wrap_mode (GTK_TEXT_VIEW (self->textview), GTK_WRAP_WORD);
 
   g_signal_connect (
-    reader->textview, "button-press-event", (GCallback)lr_reader_button_press_event, reader);
+    self->textview, "button-press-event", (GCallback)lr_reader_button_press_event, self);
 
-  apply_textview_style (reader->textview);
+  self->word_popover = gtk_popover_new (self->textview);
 
-  reader->word_popover = gtk_popover_new (reader->textview);
-
-  reader->word_label = gtk_label_new ("Definition goes here");
+  self->word_label = gtk_label_new ("Definition goes here");
   GtkWidget *pop_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 10);
-  gtk_container_add (GTK_CONTAINER (pop_box), reader->word_label);
+  gtk_container_add (GTK_CONTAINER (pop_box), self->word_label);
   gtk_container_add (GTK_CONTAINER (pop_box), gtk_button_new_with_label ("New lexeme"));
   GtkWidget *form_button = gtk_button_new_with_label ("Add form");
-  g_signal_connect (form_button, "clicked", (GCallback)add_form_button, reader->word_popover);
+  g_signal_connect (form_button, "clicked", (GCallback)add_form_button, self->word_popover);
 
   gtk_container_add (GTK_CONTAINER (pop_box), form_button);
   gtk_widget_show_all (pop_box);
 
-  gtk_popover_set_position (GTK_POPOVER (reader->word_popover), GTK_POS_BOTTOM);
+  gtk_popover_set_position (GTK_POPOVER (self->word_popover), GTK_POS_BOTTOM);
 
-  gtk_container_add (GTK_CONTAINER (reader->word_popover), pop_box);
+  gtk_container_add (GTK_CONTAINER (self->word_popover), pop_box);
+
+  self->word_tag =
+    gtk_text_buffer_create_tag (gtk_text_view_get_buffer (GTK_TEXT_VIEW (self->textview)),
+                                "words",
+                                "background",
+                                "#ffdd88",
+                                NULL);
 }
 
 static void
@@ -160,10 +161,42 @@ lr_reader_new (void)
   return g_object_new (LR_TYPE_READER, NULL);
 }
 
+static void
+highlight_words (LrReader *self)
+{
+  GtkTextBuffer *buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (self->textview));
+
+  const GArray *words = lr_splitter_get_words (self->splitter);
+  const char *text = lr_text_get_text (self->text);
+  for (int i = 0; i < words->len; ++i)
+    {
+      lr_word_range_t range = g_array_index (words, lr_word_range_t, i);
+
+      /* GtkTextBuffer works with offsets while GRegex with indices,
+	 * we need to convert between the two!
+	 */
+      glong word_start_offset = g_utf8_pointer_to_offset (text, &text[range.start]);
+      glong word_end_offset = g_utf8_pointer_to_offset (text, &text[range.end]);
+
+      GtkTextIter word_start, word_end;
+      gtk_text_buffer_get_iter_at_offset (buffer, &word_start, word_start_offset);
+      gtk_text_buffer_get_iter_at_offset (buffer, &word_end, word_end_offset);
+
+      gtk_text_buffer_apply_tag (buffer, self->word_tag, &word_start, &word_end);
+    }
+}
+
 void
 lr_reader_set_text (LrReader *self, LrText *text)
 {
   self->text = text;
+
+  /* Destroy the old splitter (if any) and create a new one */
+  g_clear_object (&self->splitter);
+  self->splitter = lr_splitter_new (self->text);
+
   GtkTextBuffer *text_buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (self->textview));
   gtk_text_buffer_set_text (text_buffer, lr_text_get_text (text), -1);
+
+  highlight_words (self);
 }

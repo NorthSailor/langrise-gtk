@@ -110,10 +110,10 @@ lr_text_get_id (LrText *self)
   return self->id;
 }
 
-int
-lr_text_get_language_id (LrText *self)
+LrLanguage *
+lr_text_get_language (LrText *self)
 {
-  return lr_language_get_id (self->language);
+  return self->language;
 }
 
 const gchar *

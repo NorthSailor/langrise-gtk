@@ -7,6 +7,7 @@ struct _LrLanguage
   gint id;
   gchar *code;
   gchar *name;
+  gchar *word_regex;
 };
 
 G_DEFINE_TYPE (LrLanguage, lr_language, G_TYPE_OBJECT)
@@ -17,6 +18,7 @@ enum
   PROP_ID,
   PROP_CODE,
   PROP_NAME,
+  PROP_WORD_REGEX,
   N_PROPERTIES
 };
 
@@ -61,6 +63,10 @@ lr_language_set_property (GObject *object,
       g_free (self->name);
       self->name = g_value_dup_string (value);
       break;
+    case PROP_WORD_REGEX:
+      g_free (self->word_regex);
+      self->word_regex = g_value_dup_string (value);
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
     }
@@ -85,16 +91,23 @@ lr_language_class_init (LrLanguageClass *klass)
     "code", "Code", "The language code.", "", G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE);
 
   obj_properties[PROP_NAME] = g_param_spec_string (
-    "name", "Name", "The name of the language", "", G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE);
+    "name", "Name", "The name of the language.", "", G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE);
+
+  obj_properties[PROP_WORD_REGEX] = g_param_spec_string ("word-regex",
+                                                         "Word Regex",
+                                                         "Regular expression to identify words.",
+                                                         "[a-zA-Z]+",
+                                                         G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE);
 
 
   g_object_class_install_properties (object_class, N_PROPERTIES, obj_properties);
 }
 
 LrLanguage *
-lr_language_new (int id, const gchar *code, const gchar *name)
+lr_language_new (int id, const gchar *code, const gchar *name, const gchar *word_regex)
 {
-  return g_object_new (LR_TYPE_LANGUAGE, "id", id, "code", code, "name", name, NULL);
+  return g_object_new (
+    LR_TYPE_LANGUAGE, "id", id, "code", code, "name", name, "word-regex", word_regex, NULL);
 }
 
 int
@@ -103,15 +116,21 @@ lr_language_get_id (LrLanguage *self)
   return self->id;
 }
 
-gchar *
+const gchar *
 lr_language_get_code (LrLanguage *self)
 {
   return self->code;
 }
 
-gchar *
+const gchar *
 lr_language_get_name (LrLanguage *self)
 {
   return self->name;
+}
+
+const gchar *
+lr_language_get_word_regex (LrLanguage *self)
+{
+  return self->word_regex;
 }
 

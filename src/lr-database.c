@@ -38,9 +38,10 @@ G_DEFINE_TYPE (LrDatabase, lr_database, G_TYPE_OBJECT)
 static void
 prepare_sql_statements (LrDatabase *db)
 {
-  g_assert (sqlite3_prepare_v2 (
-              db->db, "SELECT ID, Code, Name FROM Languages;", -1, &db->lang_stmt, NULL) ==
-            SQLITE_OK);
+  g_assert (
+    sqlite3_prepare_v2 (
+      db->db, "SELECT ID, Code, Name, WordRegex FROM Languages;", -1, &db->lang_stmt, NULL) ==
+    SQLITE_OK);
 
   g_assert (sqlite3_prepare_v2 (
               db->db,
@@ -170,8 +171,9 @@ lr_database_populate_languages (LrDatabase *self, GListStore *store)
       int id = sqlite3_column_int (self->lang_stmt, 0);
       const gchar *code = (const gchar *)sqlite3_column_text (self->lang_stmt, 1);
       const gchar *name = (const gchar *)sqlite3_column_text (self->lang_stmt, 2);
+      const gchar *word_regex = (const gchar *)sqlite3_column_text (self->lang_stmt, 3);
 
-      LrLanguage *lang = lr_language_new (id, code, name);
+      LrLanguage *lang = lr_language_new (id, code, name, word_regex);
 
       g_list_store_append (store, lang);
 
@@ -233,7 +235,9 @@ lr_database_insert_text (LrDatabase *self, LrText *text)
 
   sqlite3_reset (stmt);
 
-  sqlite3_bind_int (stmt, 1, lr_text_get_language_id (text));
+  LrLanguage *language = lr_text_get_language (text);
+
+  sqlite3_bind_int (stmt, 1, lr_language_get_id (language));
   sqlite3_bind_text (stmt, 2, lr_text_get_title (text), -1, NULL);
   sqlite3_bind_text (stmt, 3, lr_text_get_tags (text), -1, NULL);
   sqlite3_bind_text (stmt, 4, lr_text_get_text (text), -1, NULL);
