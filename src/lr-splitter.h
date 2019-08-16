@@ -19,6 +19,8 @@ LrSplitter *lr_splitter_new (LrText *text);
 
 const GArray *lr_splitter_get_words (LrSplitter *self);
 
+const lr_word_range_t *lr_splitter_get_word_at_index (LrSplitter *self, int index);
+
 G_END_DECLS
 
 #endif /* lr_splitter */

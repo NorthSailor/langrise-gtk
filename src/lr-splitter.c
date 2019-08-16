@@ -134,3 +134,18 @@ lr_splitter_get_words (LrSplitter *self)
   return self->words;
 }
 
+const lr_word_range_t *
+lr_splitter_get_word_at_index (LrSplitter *self, int index)
+{
+  for (int i = 0; i < self->words->len; i++)
+    {
+      lr_word_range_t *range = &g_array_index (self->words, lr_word_range_t, i);
+      if (index < range->start)
+        return NULL;
+
+      if (index <= range->end)
+        return range;
+    }
+  return NULL;
+}
+
