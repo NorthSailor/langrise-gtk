@@ -41,37 +41,25 @@
       </packing>
     </child>
     <child>
-      <object class="GtkPaned">
+      <object class="GtkBox">
         <property name="visible">True</property>
-        <property name="can_focus">True</property>
-        <property name="vexpand">True</property>
+        <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
-        <property name="position">200</property>
-        <property name="position_set">True</property>
-        <property name="wide_handle">True</property>
+        <property name="homogeneous">True</property>
         <child>
-          <object class="GtkLabel">
+          <object class="GtkListBox" id="suggestion_listbox">
+            <property name="width_request">200</property>
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="margin_left">20</property>
-            <property name="margin_right">20</property>
-            <property name="label" translatable="yes">Lexeme/word info</property>
           </object>
           <packing>
-            <property name="resize">False</property>
-            <property name="shrink">True</property>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Dictionary view</property>
-          </object>
-          <packing>
-            <property name="resize">True</property>
-            <property name="shrink">True</property>
-          </packing>
+          <placeholder/>
         </child>
       </object>
       <packing>

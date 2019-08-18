@@ -41,14 +41,14 @@ lr_splitter_constructed (GObject *obj)
   self->word_regex = g_regex_new (word_regex_string, 0, 0, NULL);
   g_assert (self->word_regex != NULL);
 
-  self->words = g_array_new (FALSE, FALSE, sizeof (lr_word_range_t));
+  self->words = g_array_new (FALSE, FALSE, sizeof (lr_range_t));
 
   /* Split the text */
   GMatchInfo *match_info;
   g_regex_match (self->word_regex, lr_text_get_text (text), 0, &match_info);
   while (g_match_info_matches (match_info))
     {
-      lr_word_range_t range;
+      lr_range_t range;
       g_match_info_fetch_pos (match_info, 0, &range.start, &range.end);
 
       g_array_append_val (self->words, range);
@@ -134,12 +134,12 @@ lr_splitter_get_words (LrSplitter *self)
   return self->words;
 }
 
-const lr_word_range_t *
+const lr_range_t *
 lr_splitter_get_word_at_index (LrSplitter *self, int index)
 {
   for (int i = 0; i < self->words->len; i++)
     {
-      lr_word_range_t *range = &g_array_index (self->words, lr_word_range_t, i);
+      lr_range_t *range = &g_array_index (self->words, lr_range_t, i);
       if (index < range->start)
         return NULL;
 

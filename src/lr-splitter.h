@@ -10,7 +10,7 @@ G_BEGIN_DECLS
 typedef struct
 {
   int start, end;
-} lr_word_range_t;
+} lr_range_t;
 
 #define LR_TYPE_SPLITTER (lr_splitter_get_type ())
 G_DECLARE_FINAL_TYPE (LrSplitter, lr_splitter, LR, SPLITTER, GObject)
@@ -19,7 +19,7 @@ LrSplitter *lr_splitter_new (LrText *text);
 
 const GArray *lr_splitter_get_words (LrSplitter *self);
 
-const lr_word_range_t *lr_splitter_get_word_at_index (LrSplitter *self, int index);
+const lr_range_t *lr_splitter_get_word_at_index (LrSplitter *self, int index);
 
 G_END_DECLS
 
