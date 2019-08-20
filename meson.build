@@ -2,7 +2,6 @@ project('langrise', 'c')
 
 glibdep = dependency('glib-2.0')
 gtkdep = dependency('gtk+-3.0')
-webkitdep = dependency('webkit2gtk-4.0')
 sqldep = dependency('sqlite3')
 
 gnome = import('gnome')
@@ -42,4 +41,4 @@ executable('langrise',
 		'src/lr-text-selector.c',
 		'src/lr-text-selector.h',
 	],
-	dependencies : [glibdep, gtkdep, sqldep, webkitdep])
+	dependencies : [glibdep, gtkdep, sqldep])

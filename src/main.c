@@ -2,7 +2,6 @@
 #include <gtk/gtk.h>
 #include <sqlite3.h>
 #include <stdio.h>
-#include <webkit2/webkit2.h>
 #include "lr-database.h"
 #include "lr-main-window.h"
 
