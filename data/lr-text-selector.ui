@@ -2,20 +2,10 @@
 <!-- Generated with glade 3.22.1 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
-  <object class="GtkImage" id="delete_icon">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="icon_name">list-remove-symbolic</property>
-  </object>
   <object class="GtkImage" id="edit_icon">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <property name="icon_name">document-edit-symbolic</property>
-  </object>
-  <object class="GtkImage" id="new_icon">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="icon_name">list-add-symbolic</property>
   </object>
   <object class="GtkImage" id="read_icon">
     <property name="visible">True</property>
@@ -71,9 +61,11 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="image">new_icon</property>
             <property name="always_show_image">True</property>
             <signal name="clicked" handler="new_text_cb" swapped="yes"/>
+            <style>
+              <class name="suggested-action"/>
+            </style>
           </object>
           <packing>
             <property name="expand">True</property>
@@ -103,9 +95,11 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="image">delete_icon</property>
             <property name="always_show_image">True</property>
             <signal name="clicked" handler="delete_text_cb" swapped="yes"/>
+            <style>
+              <class name="destructive-action"/>
+            </style>
           </object>
           <packing>
             <property name="expand">True</property>

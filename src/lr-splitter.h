@@ -21,6 +21,8 @@ const GArray *lr_splitter_get_words (LrSplitter *self);
 
 const lr_range_t *lr_splitter_get_word_at_index (LrSplitter *self, int index);
 
+GList *lr_splitter_ranges_from_string (LrSplitter *self, const gchar *range);
+
 G_END_DECLS
 
 #endif /* lr_splitter */

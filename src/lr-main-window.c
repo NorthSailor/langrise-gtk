@@ -184,7 +184,7 @@ read_text_cb (LrTextSelector *selector, LrText *text, LrMainWindow *self)
 
   lr_database_load_text (self->db, text);
 
-  lr_reader_set_text (LR_READER (self->reader), text);
+  lr_reader_set_text (LR_READER (self->reader), text, self->db);
 
   gtk_label_set_text (GTK_LABEL (self->text_title_label), lr_text_get_title (text));
   switch_to_mode (self, MODE_READING);

@@ -149,3 +149,24 @@ lr_splitter_get_word_at_index (LrSplitter *self, int index)
   return NULL;
 }
 
+GList *
+lr_splitter_ranges_from_string (LrSplitter *self, const gchar *range)
+{
+  GList *list = NULL;
+
+  gchar **ranges = g_strsplit (range, ";", -1);
+
+  for (int i = 0; ranges[i] != NULL; ++i)
+    {
+      const gchar *string = ranges[i];
+      int word = g_ascii_strtoll (string, NULL, 10);
+
+      lr_range_t *range = &g_array_index (self->words, lr_range_t, word);
+      list = g_list_append (list, range);
+    }
+
+  g_strfreev (ranges);
+
+  return list;
+}
+

@@ -3,6 +3,7 @@
 
 #include <gtk/gtk.h>
 #include "lr-text.h"
+#include "lr-database.h"
 
 G_BEGIN_DECLS
 
@@ -11,7 +12,7 @@ G_DECLARE_FINAL_TYPE (LrReader, lr_reader, LR, READER, GtkBox)
 
 GtkWidget *lr_reader_new (void);
 
-void lr_reader_set_text (LrReader *reader, LrText *text);
+void lr_reader_set_text (LrReader *reader, LrText *text, LrDatabase *db);
 
 G_END_DECLS
 
