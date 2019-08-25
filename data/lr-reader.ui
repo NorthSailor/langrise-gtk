@@ -69,6 +69,62 @@
               <object class="GtkBox">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="margin_left">10</property>
+                <property name="margin_right">10</property>
+                <property name="orientation">vertical</property>
+                <property name="spacing">10</property>
+                <child>
+                  <object class="GtkEntry" id="root_form_entry">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="placeholder_text" translatable="yes">Root form</property>
+                    <signal name="changed" handler="root_form_changed_cb" object="mark_instance_button" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="mark_instance_button">
+                    <property name="label" translatable="yes">Mark instance</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <signal name="clicked" handler="mark_instance_cb" object="LrReader" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkListBox" id="suggestion_listbox">
+                    <property name="width_request">200</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="vexpand">True</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="padding">10</property>
+                    <property name="pack_type">end</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="name">new-instance</property>
+                <property name="title" translatable="yes">page0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
                 <property name="margin_top">20</property>
                 <property name="orientation">vertical</property>
                 <child>
@@ -93,7 +149,7 @@
                     <property name="margin_top">10</property>
                     <property name="margin_bottom">20</property>
                     <property name="label" translatable="yes">Select a word
-to create a new reference</property>
+to mark a new instance</property>
                     <property name="justify">center</property>
                     <attributes>
                       <attribute name="font-desc" value="Sans 14"/>
@@ -109,6 +165,7 @@ to create a new reference</property>
               <packing>
                 <property name="name">no-selection</property>
                 <property name="title" translatable="yes">page1</property>
+                <property name="position">1</property>
               </packing>
             </child>
             <child>
@@ -165,22 +222,10 @@ to create a new reference</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry">
+                      <object class="GtkEntry" id="translation_entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="progress_pulse_step">0</property>
-                        <signal name="activate" handler="lemma_changed_cb" swapped="no"/>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkEntry">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <signal name="activate" handler="translation_changed_cb" swapped="no"/>
+                        <signal name="activate" handler="translation_changed_cb" object="LrReader" swapped="no"/>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
@@ -188,14 +233,29 @@ to create a new reference</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry">
+                      <object class="GtkEntry" id="instance_note_entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <signal name="activate" handler="instance_note_changed_cb" swapped="no"/>
+                        <signal name="activate" handler="instance_note_changed_cb" object="LrReader" swapped="no"/>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
                         <property name="top_attach">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="lemma_label">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="label" translatable="yes">label</property>
+                        <attributes>
+                          <attribute name="weight" value="bold"/>
+                        </attributes>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">0</property>
                       </packing>
                     </child>
                   </object>
@@ -211,7 +271,7 @@ to create a new reference</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <signal name="clicked" handler="remove_instance_cb" swapped="yes"/>
+                    <signal name="clicked" handler="remove_instance_cb" object="LrReader" swapped="yes"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -221,9 +281,9 @@ to create a new reference</property>
                 </child>
               </object>
               <packing>
-                <property name="name">edit-word</property>
+                <property name="name">edit-instance</property>
                 <property name="title" translatable="yes">page0</property>
-                <property name="position">1</property>
+                <property name="position">2</property>
               </packing>
             </child>
           </object>
@@ -231,32 +291,6 @@ to create a new reference</property>
             <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">0</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkExpander">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="expanded">True</property>
-            <child>
-              <object class="GtkListBox" id="suggestion_listbox">
-                <property name="width_request">200</property>
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-              </object>
-            </child>
-            <child type="label">
-              <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Root suggestions</property>
-              </object>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
           </packing>
         </child>
       </object>

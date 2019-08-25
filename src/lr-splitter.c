@@ -137,7 +137,7 @@ lr_splitter_get_words (LrSplitter *self)
 const lr_range_t *
 lr_splitter_get_word_at_index (LrSplitter *self, int index)
 {
-  for (int i = 0; i < self->words->len; i++)
+  for (int i = 0; i < self->words->len; ++i)
     {
       lr_range_t *range = &g_array_index (self->words, lr_range_t, i);
       if (index < range->start)
@@ -170,3 +170,39 @@ lr_splitter_ranges_from_string (LrSplitter *self, const gchar *range)
   return list;
 }
 
+static int
+word_index_from_range (LrSplitter *self, lr_range_t *range)
+{
+  for (int i = 0; i < self->words->len; ++i)
+    {
+      lr_range_t *current_range = &g_array_index (self->words, lr_range_t, i);
+      if (current_range == range)
+        return i;
+    }
+  return -1;
+}
+
+gchar *
+lr_splitter_selection_to_text (LrSplitter *self, GList *selection)
+{
+  int n_words = g_list_length (selection);
+
+  gchar **index_str_array = g_malloc ((n_words + 1) * sizeof (gchar *));
+  index_str_array[n_words] = NULL;
+
+  int i = 0;
+  for (GList *l = selection; l != NULL; l = l->next)
+    {
+      lr_range_t *range = (lr_range_t *)l->data;
+      int word_index = word_index_from_range (self, range);
+      g_assert (word_index > -1);
+
+      index_str_array[i] = g_strdup_printf ("%d", word_index);
+      i++;
+    }
+
+  gchar *joint = g_strjoinv (";", index_str_array);
+  g_strfreev (index_str_array);
+
+  return joint;
+}

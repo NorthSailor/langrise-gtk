@@ -5,6 +5,7 @@ struct _LrLemmaInstance
   GObject parent_instance;
 
   int id;
+  int lemma_id;
   LrText *text;
   gchar *words;
   gchar *note;
@@ -14,6 +15,7 @@ enum
 {
   PROP_0,
   PROP_ID,
+  PROP_LEMMA_ID,
   PROP_TEXT,
   PROP_WORDS,
   PROP_NOTE,
@@ -53,6 +55,9 @@ lr_lemma_instance_set_property (GObject *object,
     case PROP_ID:
       lr_lemma_instance_set_id (self, g_value_get_int (value));
       break;
+    case PROP_LEMMA_ID:
+      lr_lemma_instance_set_lemma_id (self, g_value_get_int (value));
+      break;
     case PROP_TEXT:
       lr_lemma_instance_set_text (self, g_value_get_object (value));
       break;
@@ -80,6 +85,9 @@ lr_lemma_instance_get_property (GObject *object,
     case PROP_ID:
       g_value_set_int (value, lr_lemma_instance_get_id (self));
       break;
+    case PROP_LEMMA_ID:
+      g_value_set_int (value, lr_lemma_instance_get_lemma_id (self));
+      break;
     case PROP_TEXT:
       g_value_set_object (value, lr_lemma_instance_get_text (self));
       break;
@@ -104,6 +112,8 @@ lr_lemma_instance_class_init (LrLemmaInstanceClass *klass)
 
   obj_properties[PROP_ID] =
     g_param_spec_int ("id", "ID", "The ID", -1, G_MAXINT, -1, G_PARAM_READWRITE);
+  obj_properties[PROP_LEMMA_ID] =
+    g_param_spec_int ("lemma-id", "lemma-id", "The lemma-id", -1, G_MAXINT, -1, G_PARAM_READWRITE);
   obj_properties[PROP_TEXT] =
     g_param_spec_object ("text", "text", "The text", LR_TYPE_TEXT, G_PARAM_READWRITE);
   obj_properties[PROP_WORDS] =
@@ -115,10 +125,20 @@ lr_lemma_instance_class_init (LrLemmaInstanceClass *klass)
 }
 
 LrLemmaInstance *
-lr_lemma_instance_new (int id, LrText *text, const gchar *words, const gchar *note)
+lr_lemma_instance_new (int id, int lemma_id, LrText *text, const gchar *words, const gchar *note)
 {
-  return g_object_new (
-    LR_TYPE_LEMMA_INSTANCE, "id", id, "text", text, "words", words, "note", note, NULL);
+  return g_object_new (LR_TYPE_LEMMA_INSTANCE,
+                       "id",
+                       id,
+                       "lemma-id",
+                       lemma_id,
+                       "text",
+                       text,
+                       "words",
+                       words,
+                       "note",
+                       note,
+                       NULL);
 }
 
 void
@@ -131,6 +151,18 @@ int
 lr_lemma_instance_get_id (LrLemmaInstance *self)
 {
   return self->id;
+}
+
+void
+lr_lemma_instance_set_lemma_id (LrLemmaInstance *self, int lemma_id)
+{
+  self->lemma_id = lemma_id;
+}
+
+int
+lr_lemma_instance_get_lemma_id (LrLemmaInstance *self)
+{
+  return self->lemma_id;
 }
 
 void

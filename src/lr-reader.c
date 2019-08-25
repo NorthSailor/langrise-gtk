@@ -24,8 +24,13 @@ struct _LrReader
   LrLemmatizer *lemmatizer;
 
   GtkWidget *textview;
-  GtkWidget *word_popover;
-  GtkWidget *word_label;
+
+  GtkWidget *word_stack;
+  GtkWidget *lemma_label;
+  GtkWidget *translation_entry;
+  GtkWidget *instance_note_entry;
+
+  GtkWidget *root_form_entry;
 
   GtkTextTag *selection_tag;
   GtkTextTag *instance_tag;
@@ -35,6 +40,7 @@ struct _LrReader
   GList *selection;
 
   instance_range_t *selected_instance;
+  LrLemma *active_lemma;
 
   GListStore *suggestions;
   GtkWidget *suggestion_listbox;
@@ -141,6 +147,21 @@ selection_changed (LrReader *self)
 {
   apply_selection_tag (self);
 
+  /* If only a single word is selected, set it as the text
+   * of the root form entry, as a heuristic
+   */
+  if ((self->selection) && (self->selection->next == NULL))
+    {
+      /* Only a single word is selected */
+      const lr_range_t *range = self->selection->data;
+      const gchar *text = lr_text_get_text (self->text);
+      gchar *word = g_strndup (text + range->start, (range->end - range->start));
+
+      gtk_entry_set_text (GTK_ENTRY (self->root_form_entry), word);
+
+      g_free (word);
+    }
+
   gchar *message = lr_lemmatizer_populate_suggestions (
     self->lemmatizer, self->suggestions, lr_text_get_text (self->text), self->selection);
   g_free (message);
@@ -149,22 +170,22 @@ selection_changed (LrReader *self)
 static void
 selected_instance_updated (LrReader *self)
 {
-  /* TODO Unload the previous lemma and save any changes */
+  g_clear_object (&self->active_lemma);
+
   if (!self->selected_instance)
-    {
-      g_message ("Instance selection cleared");
-      return;
-    }
+    return;
 
   /* Load the lemma */
   LrLemmaInstance *instance = self->selected_instance->instance;
-  LrLemma *lemma = lr_database_load_lemma_from_instance (self->db, instance);
-  g_assert (LR_IS_LEMMA (lemma));
+  self->active_lemma = lr_database_load_lemma_from_instance (self->db, instance);
+  g_assert (LR_IS_LEMMA (self->active_lemma));
 
-  g_message (
-    "Selected lemma '%s' -> '%s'", lr_lemma_get_lemma (lemma), lr_lemma_get_translation (lemma));
+  /* Load the lemma to the edit view */
+  gtk_label_set_text (GTK_LABEL (self->lemma_label), lr_lemma_get_lemma (self->active_lemma));
+  gtk_entry_set_text (GTK_ENTRY (self->translation_entry),
+                      lr_lemma_get_translation (self->active_lemma));
 
-  g_object_unref (lemma);
+  gtk_entry_set_text (GTK_ENTRY (self->instance_note_entry), lr_lemma_instance_get_note (instance));
 }
 
 static void
@@ -235,8 +256,8 @@ lr_reader_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer
         selected_instance = (instance_range_t *)l->data;
     }
 
-  /* If we clicked on a reference, clear the selection and
-   * set that reference as the selected one.
+  /* If we clicked on an instance, clear the selection and
+   * set that instance as the selected one.
    */
   if (selected_instance)
     {
@@ -256,22 +277,108 @@ lr_reader_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer
 
       /* If a word was selected, add it to the selection */
       if (range != NULL)
-        self->selection = g_list_append (self->selection, (gpointer)range);
+        {
+          /* Make sure the word is not already in the selection */
+          gboolean in_selection = FALSE;
+          for (GList *l = self->selection; l != NULL; l = l->next)
+            {
+              if (l->data == (gpointer)range)
+                {
+                  in_selection = TRUE;
+                  break;
+                }
+            }
+          if (!in_selection)
+            self->selection = g_list_append (self->selection, (gpointer)range);
+        }
     }
 
   selection_changed (self);
   highlight_selected_instance (self);
   selected_instance_updated (self);
 
+  /* Switch the word stack to the right page. */
+  if (self->selected_instance)
+    {
+      gtk_stack_set_visible_child_name (GTK_STACK (self->word_stack), "edit-instance");
+    }
+  else if (self->selection)
+    {
+      gtk_stack_set_visible_child_name (GTK_STACK (self->word_stack), "new-instance");
+    }
+  else
+    {
+      gtk_stack_set_visible_child_name (GTK_STACK (self->word_stack), "no-selection");
+    }
+
   return TRUE;
 }
 
 static void
-lemma_changed_cb (GtkEntry *entry, LrReader *self)
+mark_instance_cb (GtkButton *button, LrReader *self)
+{
+  const gchar *root_form = gtk_entry_get_text (GTK_ENTRY (self->root_form_entry));
+
+  /* Find or create the lemma for the given text */
+  LrLemma *lemma = lr_lemma_new (-1, root_form, "", lr_text_get_language (self->text));
+  lr_database_load_or_create_lemma (self->db, lemma);
+
+  gchar *words = lr_splitter_selection_to_text (self->splitter, self->selection);
+
+  /* Create a new lemma instance and set its lemma and word fields */
+  LrLemmaInstance *instance =
+    lr_lemma_instance_new (-1, lr_lemma_get_id (lemma), self->text, words, "");
+  g_free (words);
+
+  /* Persist it in the database */
+  lr_database_insert_instance (self->db, instance);
+
+  int new_id = lr_lemma_instance_get_id (instance);
+
+  g_object_unref (instance);
+  g_object_unref (lemma);
+
+  /* Reload the instances */
+  clear_selection (self);
+  update_instances (self);
+
+  /* Select the instance with the new id */
+  instance_range_t *instance_range = NULL;
+
+  for (GList *l = self->instance_ranges; l != NULL; l = l->next)
+    {
+      instance_range_t *ir = (instance_range_t *)l->data;
+      int id = lr_lemma_instance_get_id (ir->instance);
+      if (new_id == id)
+        {
+          instance_range = ir;
+          break;
+        }
+    }
+  g_assert (instance_range != NULL); /* We just added it, it has to be there! */
+  self->selected_instance = instance_range;
+
+  selection_changed (self);
+  highlight_selected_instance (self);
+  selected_instance_updated (self);
+
+  gtk_stack_set_visible_child_name (GTK_STACK (self->word_stack), "edit-instance");
+}
+
+/* Called when the root form entry is edited.
+ * Should disable the "Mark instance" button
+ * if the entry is empty.
+ */
+static void
+root_form_changed_cb (GtkEntry *entry, GtkWidget *mark_instance_button)
 {
   g_assert (GTK_IS_ENTRY (entry));
-  g_assert (LR_IS_READER (self));
-  g_message ("lemma_changed_cb ()");
+  g_assert (GTK_IS_BUTTON (mark_instance_button));
+
+  if (gtk_entry_get_text_length (entry) == 0)
+    gtk_widget_set_sensitive (mark_instance_button, FALSE);
+  else
+    gtk_widget_set_sensitive (mark_instance_button, TRUE);
 }
 
 static void
@@ -279,7 +386,12 @@ translation_changed_cb (GtkEntry *entry, LrReader *self)
 {
   g_assert (GTK_IS_ENTRY (entry));
   g_assert (LR_IS_READER (self));
-  g_message ("translation_changed_cb ()");
+  g_assert (LR_IS_LEMMA (self->active_lemma));
+
+  const gchar *new_translation = gtk_entry_get_text (entry);
+
+  lr_lemma_set_translation (self->active_lemma, new_translation);
+  lr_database_update_lemma (self->db, self->active_lemma);
 }
 
 static void
@@ -287,7 +399,14 @@ instance_note_changed_cb (GtkEntry *entry, LrReader *self)
 {
   g_assert (GTK_IS_ENTRY (entry));
   g_assert (LR_IS_READER (self));
-  g_message ("instance_note_changed_cb ()");
+
+  const gchar *new_note = gtk_entry_get_text (entry);
+
+  LrLemmaInstance *instance = self->selected_instance->instance;
+  g_assert (LR_IS_LEMMA_INSTANCE (instance));
+
+  lr_lemma_instance_set_note (instance, new_note);
+  lr_database_update_instance (self->db, instance);
 }
 
 static void
@@ -375,6 +494,7 @@ lr_reader_finalize (GObject *obj)
 
   g_clear_object (&self->suggestions);
   g_clear_object (&self->instance_store);
+  g_clear_object (&self->active_lemma);
 
   G_OBJECT_CLASS (lr_reader_parent_class)->finalize (obj);
 }
@@ -391,10 +511,17 @@ lr_reader_class_init (LrReaderClass *klass)
   gtk_widget_class_bind_template_child (widget_class, LrReader, textview);
   gtk_widget_class_bind_template_child (widget_class, LrReader, suggestion_listbox);
 
-  gtk_widget_class_bind_template_callback (widget_class, lemma_changed_cb);
+  gtk_widget_class_bind_template_child (widget_class, LrReader, word_stack);
+  gtk_widget_class_bind_template_child (widget_class, LrReader, lemma_label);
+  gtk_widget_class_bind_template_child (widget_class, LrReader, translation_entry);
+  gtk_widget_class_bind_template_child (widget_class, LrReader, instance_note_entry);
+  gtk_widget_class_bind_template_child (widget_class, LrReader, root_form_entry);
+
+  gtk_widget_class_bind_template_callback (widget_class, root_form_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, translation_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, instance_note_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, remove_instance_cb);
+  gtk_widget_class_bind_template_callback (widget_class, mark_instance_cb);
 }
 
 GtkWidget *
@@ -425,7 +552,9 @@ lr_reader_set_text (LrReader *self, LrText *text, LrDatabase *db)
   gtk_text_buffer_set_text (text_buffer, lr_text_get_text (text), -1);
 
   clear_selection (self);
-
   update_instances (self);
+
+  /* Set the stack to no selection */
+  gtk_stack_set_visible_child_name (GTK_STACK (self->word_stack), "no-selection");
 }
 

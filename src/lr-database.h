@@ -29,6 +29,12 @@ void lr_database_insert_text (LrDatabase *self, LrText *text);
 void lr_database_update_text (LrDatabase *self, LrText *text);
 void lr_database_delete_text (LrDatabase *self, LrText *text);
 
+void lr_database_update_lemma (LrDatabase *self, LrLemma *lemma);
+void lr_database_update_instance (LrDatabase *self, LrLemmaInstance *instance);
+
+void lr_database_load_or_create_lemma (LrDatabase *self, LrLemma *lemma);
+void lr_database_insert_instance (LrDatabase *self, LrLemmaInstance *instance);
+
 G_END_DECLS
 
 #endif /* _lr_database_h */

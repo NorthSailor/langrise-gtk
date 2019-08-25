@@ -33,6 +33,21 @@ struct _LrDatabase
 
   /* Get lemma by instance ID */
   sqlite3_stmt *lemma_by_instance_id;
+
+  /* Update lemma by ID */
+  sqlite3_stmt *update_lemma_by_id;
+
+  /* Update instance by ID */
+  sqlite3_stmt *update_instance_by_id;
+
+  /* Insert (or ignore) lemma */
+  sqlite3_stmt *insert_lemma;
+
+  /* Get a lemma by its lemma and language ID */
+  sqlite3_stmt *lemma_by_lemma_language;
+
+  /* Insert a lemma instance */
+  sqlite3_stmt *insert_instance;
 };
 
 enum
@@ -79,7 +94,7 @@ prepare_sql_statements (LrDatabase *db)
             SQLITE_OK);
 
   g_assert (sqlite3_prepare_v2 (db->db,
-                                "SELECT ID, Words, Note FROM Instances WHERE TextID = ?;",
+                                "SELECT ID, LemmaID, Words, Note FROM Instances WHERE TextID = ?;",
                                 -1,
                                 &db->instances_by_text_id,
                                 NULL) == SQLITE_OK);
@@ -90,6 +105,38 @@ prepare_sql_statements (LrDatabase *db)
                                 -1,
                                 &db->lemma_by_instance_id,
                                 NULL) == SQLITE_OK);
+
+  g_assert (sqlite3_prepare_v2 (db->db,
+                                "UPDATE Lemmas SET Translation = ? WHERE ID = ?;",
+                                -1,
+                                &db->update_lemma_by_id,
+                                NULL) == SQLITE_OK);
+
+  g_assert (sqlite3_prepare_v2 (db->db,
+                                "UPDATE Instances SET Note = ? WHERE ID = ?;",
+                                -1,
+                                &db->update_instance_by_id,
+                                NULL) == SQLITE_OK);
+
+  g_assert (sqlite3_prepare_v2 (db->db,
+                                "INSERT OR IGNORE INTO Lemmas (Lemma, LanguageID, Translation) "
+                                "VALUES (?1, ?2, \"No translation\");",
+                                -1,
+                                &db->insert_lemma,
+                                NULL) == SQLITE_OK);
+
+  g_assert (sqlite3_prepare_v2 (db->db,
+                                "SELECT ID FROM Lemmas WHERE Lemma = ?1 AND LanguageID = ?2;",
+                                -1,
+                                &db->lemma_by_lemma_language,
+                                NULL) == SQLITE_OK);
+
+  g_assert (sqlite3_prepare_v2 (
+              db->db,
+              "INSERT INTO Instances (LemmaID, TextID, Words, Note) VALUES (?1, ?2, ?3, \"\");",
+              -1,
+              &db->insert_instance,
+              NULL) == SQLITE_OK);
 }
 
 static void
@@ -103,6 +150,11 @@ free_sql_statements (LrDatabase *db)
   sqlite3_finalize (db->delete_text_by_id);
   sqlite3_finalize (db->instances_by_text_id);
   sqlite3_finalize (db->lemma_by_instance_id);
+  sqlite3_finalize (db->update_lemma_by_id);
+  sqlite3_finalize (db->update_instance_by_id);
+  sqlite3_finalize (db->insert_lemma);
+  sqlite3_finalize (db->lemma_by_lemma_language);
+  sqlite3_finalize (db->insert_instance);
 }
 
 static void
@@ -248,10 +300,11 @@ lr_database_populate_lemma_instances (LrDatabase *self, GListStore *instance_sto
   while (sqlite3_step (stmt) == SQLITE_ROW)
     {
       int id = sqlite3_column_int (stmt, 0);
-      const gchar *words = (const gchar *)sqlite3_column_text (stmt, 1);
-      const gchar *note = (const gchar *)sqlite3_column_text (stmt, 2);
+      int lemma_id = sqlite3_column_int (stmt, 1);
+      const gchar *words = (const gchar *)sqlite3_column_text (stmt, 2);
+      const gchar *note = (const gchar *)sqlite3_column_text (stmt, 3);
 
-      LrLemmaInstance *instance = lr_lemma_instance_new (id, text, words, note);
+      LrLemmaInstance *instance = lr_lemma_instance_new (id, lemma_id, text, words, note);
 
       g_list_store_append (instance_store, instance);
       g_clear_object (&instance);
@@ -352,4 +405,84 @@ lr_database_delete_text (LrDatabase *self, LrText *text)
   sqlite3_bind_int (stmt, 1, lr_text_get_id (text));
 
   g_assert (sqlite3_step (stmt) == SQLITE_DONE);
+}
+
+void
+lr_database_update_lemma (LrDatabase *self, LrLemma *lemma)
+{
+  g_assert (LR_IS_DATABASE (self));
+  g_assert (LR_IS_LEMMA (lemma));
+
+  sqlite3_stmt *stmt = self->update_lemma_by_id;
+  sqlite3_reset (stmt);
+
+  sqlite3_bind_text (stmt, 1, lr_lemma_get_translation (lemma), -1, NULL);
+  sqlite3_bind_int (stmt, 2, lr_lemma_get_id (lemma));
+
+  g_assert (sqlite3_step (stmt) == SQLITE_DONE);
+}
+
+void
+lr_database_update_instance (LrDatabase *self, LrLemmaInstance *instance)
+{
+  g_assert (LR_IS_DATABASE (self));
+  g_assert (LR_IS_LEMMA_INSTANCE (instance));
+
+  sqlite3_stmt *stmt = self->update_instance_by_id;
+  sqlite3_reset (stmt);
+
+  sqlite3_bind_text (stmt, 1, lr_lemma_instance_get_note (instance), -1, NULL);
+  sqlite3_bind_int (stmt, 2, lr_lemma_instance_get_id (instance));
+
+  g_assert (sqlite3_step (stmt) == SQLITE_DONE);
+}
+
+void
+lr_database_load_or_create_lemma (LrDatabase *self, LrLemma *lemma)
+{
+  g_assert (LR_IS_DATABASE (self));
+  g_assert (LR_IS_LEMMA (lemma));
+
+  sqlite3_stmt *stmt = self->insert_lemma;
+  sqlite3_reset (stmt);
+
+  sqlite3_bind_text (stmt, 1, lr_lemma_get_lemma (lemma), -1, NULL);
+  sqlite3_bind_int (stmt, 2, lr_language_get_id (lr_lemma_get_language (lemma)));
+
+  g_assert (sqlite3_step (stmt) == SQLITE_DONE);
+
+  stmt = self->lemma_by_lemma_language;
+  sqlite3_reset (stmt);
+
+  sqlite3_bind_text (stmt, 1, lr_lemma_get_lemma (lemma), -1, NULL);
+  sqlite3_bind_int (stmt, 2, lr_language_get_id (lr_lemma_get_language (lemma)));
+
+  g_assert (sqlite3_step (stmt) == SQLITE_ROW);
+
+  int lemma_id = sqlite3_column_int (stmt, 0);
+
+  lr_lemma_set_id (lemma, lemma_id);
+}
+
+void
+lr_database_insert_instance (LrDatabase *self, LrLemmaInstance *instance)
+{
+  g_assert (LR_IS_DATABASE (self));
+  g_assert (LR_IS_LEMMA_INSTANCE (instance));
+
+  sqlite3_stmt *stmt = self->insert_instance;
+  sqlite3_reset (stmt);
+
+  int lemma_id = lr_lemma_instance_get_lemma_id (instance);
+  int text_id = lr_text_get_id (lr_lemma_instance_get_text (instance));
+  const gchar *words = lr_lemma_instance_get_words (instance);
+
+  sqlite3_bind_int (stmt, 1, lemma_id);
+  sqlite3_bind_int (stmt, 2, text_id);
+  sqlite3_bind_text (stmt, 3, words, -1, NULL);
+
+  g_assert (sqlite3_step (stmt) == SQLITE_DONE);
+
+  int id = sqlite3_last_insert_rowid (self->db);
+  lr_lemma_instance_set_id (instance, id);
 }
