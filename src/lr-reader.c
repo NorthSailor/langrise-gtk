@@ -168,7 +168,7 @@ selection_changed (LrReader *self)
 }
 
 static void
-selected_instance_updated (LrReader *self)
+open_lemma_from_active_instance (LrReader *self)
 {
   g_clear_object (&self->active_lemma);
 
@@ -227,6 +227,21 @@ update_instances (LrReader *self)
     }
 }
 
+/* Highlight an instance, open the edit panel and load the lemma.
+ * Clears the selection.
+ */
+static void
+activate_instance (LrReader *self, instance_range_t *instance)
+{
+  clear_selection (self);
+  gtk_stack_set_visible_child_name (GTK_STACK (self->word_stack), "edit-instance");
+  self->selected_instance = instance;
+
+  selection_changed (self);
+  highlight_selected_instance (self);
+  open_lemma_from_active_instance (self);
+}
+
 static gboolean
 lr_reader_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
 {
@@ -261,9 +276,7 @@ lr_reader_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer
    */
   if (selected_instance)
     {
-      clear_selection (self);
-      /* TODO Probably do extra things with the previous instance */
-      self->selected_instance = selected_instance;
+      activate_instance (self, selected_instance);
     }
   else
     {
@@ -291,24 +304,19 @@ lr_reader_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer
           if (!in_selection)
             self->selection = g_list_append (self->selection, (gpointer)range);
         }
-    }
 
-  selection_changed (self);
-  highlight_selected_instance (self);
-  selected_instance_updated (self);
+      selection_changed (self);
+      highlight_selected_instance (self);
 
-  /* Switch the word stack to the right page. */
-  if (self->selected_instance)
-    {
-      gtk_stack_set_visible_child_name (GTK_STACK (self->word_stack), "edit-instance");
-    }
-  else if (self->selection)
-    {
-      gtk_stack_set_visible_child_name (GTK_STACK (self->word_stack), "new-instance");
-    }
-  else
-    {
-      gtk_stack_set_visible_child_name (GTK_STACK (self->word_stack), "no-selection");
+      /* Set the stack to the right page */
+      if (self->selection)
+        {
+          gtk_stack_set_visible_child_name (GTK_STACK (self->word_stack), "new-instance");
+        }
+      else
+        {
+          gtk_stack_set_visible_child_name (GTK_STACK (self->word_stack), "no-selection");
+        }
     }
 
   return TRUE;
@@ -356,13 +364,12 @@ mark_instance_cb (GtkButton *button, LrReader *self)
         }
     }
   g_assert (instance_range != NULL); /* We just added it, it has to be there! */
-  self->selected_instance = instance_range;
 
-  selection_changed (self);
-  highlight_selected_instance (self);
-  selected_instance_updated (self);
+  activate_instance (self, instance_range);
 
-  gtk_stack_set_visible_child_name (GTK_STACK (self->word_stack), "edit-instance");
+  /* Activate the instance note entry,
+   * since it's what most users will want to edit */
+  gtk_widget_grab_focus (self->instance_note_entry);
 }
 
 /* Called when the root form entry is edited.
@@ -414,6 +421,17 @@ remove_instance_cb (LrReader *self, GtkWidget *button)
 {
   g_assert (GTK_IS_BUTTON (button));
   g_assert (LR_IS_READER (self));
+
+  lr_database_delete_instance (self->db, self->selected_instance->instance);
+
+  /* Close the edit panel and clear the active lemma and instance. */
+  g_clear_object (&self->active_lemma);
+  self->selected_instance = NULL;
+
+  update_instances (self);
+  highlight_selected_instance (self);
+
+  gtk_stack_set_visible_child_name (GTK_STACK (self->word_stack), "no-selection");
 }
 
 static GtkWidget *
@@ -446,30 +464,27 @@ lr_reader_init (LrReader *self)
 
   self->selection = NULL;
 
-  GdkRGBA instance_color;
-  gdk_rgba_parse (&instance_color, "#ffcc00");
-
   self->instance_tag =
     gtk_text_buffer_create_tag (gtk_text_view_get_buffer (GTK_TEXT_VIEW (self->textview)),
                                 "instance",
-                                "underline",
-                                PANGO_UNDERLINE_SINGLE,
-                                "underline-rgba",
-                                &instance_color,
-                                "foreground-rgba",
-                                &instance_color,
+                                "weight",
+                                PANGO_WEIGHT_BOLD,
                                 NULL);
   self->selection_tag =
     gtk_text_buffer_create_tag (gtk_text_view_get_buffer (GTK_TEXT_VIEW (self->textview)),
                                 "selection",
-                                "background-rgba",
-                                &instance_color,
+                                "background",
+                                "#ffcc00",
+                                "foreground",
+                                "black",
                                 NULL);
   self->highlighted_instance_tag =
     gtk_text_buffer_create_tag (gtk_text_view_get_buffer (GTK_TEXT_VIEW (self->textview)),
                                 "highlighted-instance",
                                 "background",
                                 "#ccff00",
+                                "foreground",
+                                "black",
                                 NULL);
 
   self->suggestions = g_list_store_new (LR_TYPE_LEMMA_SUGGESTION);

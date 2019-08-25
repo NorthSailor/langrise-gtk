@@ -48,6 +48,12 @@ struct _LrDatabase
 
   /* Insert a lemma instance */
   sqlite3_stmt *insert_instance;
+
+  /* Remove instance by instance id */
+  sqlite3_stmt *delete_instance_by_id;
+
+  /* Remove orphaned lemma by ID */
+  sqlite3_stmt *delete_orphaned_lemma_by_id;
 };
 
 enum
@@ -137,6 +143,18 @@ prepare_sql_statements (LrDatabase *db)
               -1,
               &db->insert_instance,
               NULL) == SQLITE_OK);
+
+  g_assert (
+    sqlite3_prepare_v2 (
+      db->db, "DELETE FROM Instances WHERE ID = ?1;", -1, &db->delete_instance_by_id, NULL) ==
+    SQLITE_OK);
+
+  g_assert (sqlite3_prepare_v2 (db->db,
+                                "DELETE FROM Lemmas WHERE ID = ?1 AND (SELECT COUNT(ID) FROM "
+                                "Instances WHERE LemmaID = ?1) == 0;",
+                                -1,
+                                &db->delete_orphaned_lemma_by_id,
+                                NULL) == SQLITE_OK);
 }
 
 static void
@@ -155,6 +173,8 @@ free_sql_statements (LrDatabase *db)
   sqlite3_finalize (db->insert_lemma);
   sqlite3_finalize (db->lemma_by_lemma_language);
   sqlite3_finalize (db->insert_instance);
+  sqlite3_finalize (db->delete_instance_by_id);
+  sqlite3_finalize (db->delete_orphaned_lemma_by_id);
 }
 
 static void
@@ -485,4 +505,24 @@ lr_database_insert_instance (LrDatabase *self, LrLemmaInstance *instance)
 
   int id = sqlite3_last_insert_rowid (self->db);
   lr_lemma_instance_set_id (instance, id);
+}
+
+void
+lr_database_delete_instance (LrDatabase *self, LrLemmaInstance *instance)
+{
+  g_assert (LR_IS_DATABASE (self));
+  g_assert (LR_IS_LEMMA_INSTANCE (instance));
+
+  sqlite3_stmt *stmt = self->delete_instance_by_id;
+  sqlite3_reset (stmt);
+
+  sqlite3_bind_int (stmt, 1, lr_lemma_instance_get_id (instance));
+
+  g_assert (sqlite3_step (stmt) == SQLITE_DONE);
+
+  stmt = self->delete_orphaned_lemma_by_id;
+  sqlite3_reset (stmt);
+
+  sqlite3_bind_int (stmt, 1, lr_lemma_instance_get_lemma_id (instance));
+  g_assert (sqlite3_step (stmt) == SQLITE_DONE);
 }
