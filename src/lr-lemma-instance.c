@@ -39,6 +39,9 @@ lr_lemma_instance_finalize (GObject *object)
 {
   LrLemmaInstance *self = LR_LEMMA_INSTANCE (object);
 
+  g_free (self->words);
+  g_free (self->note);
+
   G_OBJECT_CLASS (lr_lemma_instance_parent_class)->finalize (object);
 }
 

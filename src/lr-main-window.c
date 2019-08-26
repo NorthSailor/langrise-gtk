@@ -1,5 +1,6 @@
 #include "lr-main-window.h"
 #include "lr-database.h"
+#include "lr-language-manager-dialog.h"
 #include "lr-reader.h"
 #include "lr-text-selector.h"
 
@@ -225,6 +226,23 @@ about_cb (LrMainWindow *self, GtkWidget *button)
 }
 
 static void
+manage_languages_cb (LrMainWindow *self, GtkWidget *button)
+{
+  g_assert (LR_IS_MAIN_WINDOW (self));
+  g_assert (GTK_IS_BUTTON (button));
+
+  GtkWidget *manager_dialog = lr_language_manager_dialog_new (self->db);
+
+  gtk_window_set_transient_for (GTK_WINDOW (manager_dialog), GTK_WINDOW (self));
+
+  int response = gtk_dialog_run (GTK_DIALOG (manager_dialog));
+
+  g_message ("Run with response %d", response);
+
+  gtk_widget_destroy (manager_dialog);
+}
+
+static void
 quit_cb (GtkWidget *button, LrMainWindow *self)
 {
   gtk_widget_destroy (GTK_WIDGET (self));
@@ -303,6 +321,7 @@ lr_main_window_class_init (LrMainWindowClass *klass)
   gtk_widget_class_bind_template_child (widget_class, LrMainWindow, text_title_label);
 
   gtk_widget_class_bind_template_callback (widget_class, about_cb);
+  gtk_widget_class_bind_template_callback (widget_class, manage_languages_cb);
   gtk_widget_class_bind_template_callback (widget_class, go_back_cb);
   gtk_widget_class_bind_template_callback (widget_class, quit_cb);
 }
