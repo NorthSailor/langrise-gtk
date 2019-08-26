@@ -178,6 +178,39 @@ free_sql_statements (LrDatabase *db)
 }
 
 static void
+enable_foreign_keys (LrDatabase *self)
+{
+  /* By running the following PRAGMA instruction, we enable foreign key
+   * supports which means that our cascade deletes work. */
+  gchar *error_message;
+  g_assert (sqlite3_exec (self->db, "PRAGMA foreign_keys=ON", NULL, NULL, &error_message) ==
+            SQLITE_OK);
+  if (error_message)
+    {
+      g_message ("SQLite says: '%s'", error_message);
+      sqlite3_free (error_message);
+    }
+}
+
+static void
+delete_orphaned_lemmas (LrDatabase *self)
+{
+  gchar *error_message;
+  g_assert (
+    sqlite3_exec (
+      self->db,
+      "DELETE FROM Lemmas WHERE (SELECT COUNT(ID) FROM Instances WHERE LemmaID == Lemmas.ID) == 0;",
+      NULL,
+      NULL,
+      &error_message) == SQLITE_OK);
+  if (error_message)
+    {
+      g_message ("Error while deleting orphaned lemmas; SQLite says: '%s'", error_message);
+      sqlite3_free (error_message);
+    }
+}
+
+static void
 open_database (LrDatabase *self)
 {
   int rc = sqlite3_open_v2 (self->db_path, &self->db, SQLITE_OPEN_READWRITE, NULL);
@@ -189,6 +222,8 @@ open_database (LrDatabase *self)
                   sqlite3_errmsg (self->db));
       sqlite3_close (self->db);
     }
+
+  enable_foreign_keys (self);
 
   prepare_sql_statements (self);
 }
@@ -425,6 +460,8 @@ lr_database_delete_text (LrDatabase *self, LrText *text)
   sqlite3_bind_int (stmt, 1, lr_text_get_id (text));
 
   g_assert (sqlite3_step (stmt) == SQLITE_DONE);
+
+  delete_orphaned_lemmas (self);
 }
 
 void
