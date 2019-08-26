@@ -13,6 +13,9 @@ struct _LrDatabase
   /* Get all languages */
   sqlite3_stmt *lang_stmt;
 
+  /* Insert a language */
+  sqlite3_stmt *insert_language;
+
   /* Get all texts in a language */
   sqlite3_stmt *text_by_lang_stmt;
 
@@ -70,6 +73,13 @@ prepare_sql_statements (LrDatabase *db)
     sqlite3_prepare_v2 (
       db->db, "SELECT ID, Code, Name, WordRegex FROM Languages;", -1, &db->lang_stmt, NULL) ==
     SQLITE_OK);
+
+  g_assert (sqlite3_prepare_v2 (
+              db->db,
+              "INSERT OR IGNORE INTO Languages (Code, Name, WordRegex) VALUES (?1, ?2, ?3);",
+              -1,
+              &db->insert_language,
+              NULL) == SQLITE_OK);
 
   g_assert (sqlite3_prepare_v2 (
               db->db,
@@ -161,6 +171,7 @@ static void
 free_sql_statements (LrDatabase *db)
 {
   sqlite3_finalize (db->lang_stmt);
+  sqlite3_finalize (db->insert_language);
   sqlite3_finalize (db->text_by_lang_stmt);
   sqlite3_finalize (db->text_text_by_id);
   sqlite3_finalize (db->insert_text);
@@ -283,6 +294,22 @@ LrDatabase *
 lr_database_new (gchar *path)
 {
   return g_object_new (LR_TYPE_DATABASE, "path", path, NULL);
+}
+
+void
+lr_database_insert_language (LrDatabase *self, LrLanguage *language)
+{
+  g_assert (LR_IS_DATABASE (self));
+  g_assert (LR_IS_LANGUAGE (language));
+
+  sqlite3_stmt *stmt = self->insert_language;
+  sqlite3_reset (stmt);
+
+  sqlite3_bind_text (stmt, 1, lr_language_get_code (language), -1, NULL);
+  sqlite3_bind_text (stmt, 2, lr_language_get_name (language), -1, NULL);
+  sqlite3_bind_text (stmt, 3, lr_language_get_word_regex (language), -1, NULL);
+
+  g_assert (sqlite3_step (stmt) == SQLITE_DONE);
 }
 
 void

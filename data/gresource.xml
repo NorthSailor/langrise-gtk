@@ -6,6 +6,7 @@
 		<file>lr-text-selector.ui</file>
 		<file>lr-text-selector-row.ui</file>
 		<file>lr-text-dialog.ui</file>
+		<file>lr-language-editor-dialog.ui</file>
 		<file>lr-language-manager-dialog.ui</file>
 		<file>lr-language-manager-row.ui</file>
 		<file>lr-reader.ui</file>

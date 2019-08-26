@@ -53,19 +53,16 @@ lr_language_set_property (GObject *object,
   switch (property_id)
     {
     case PROP_ID:
-      self->id = g_value_get_int (value);
+      lr_language_set_id (self, g_value_get_int (value));
       break;
     case PROP_CODE:
-      g_free (self->code);
-      self->code = g_value_dup_string (value);
+      lr_language_set_code (self, g_value_get_string (value));
       break;
     case PROP_NAME:
-      g_free (self->name);
-      self->name = g_value_dup_string (value);
+      lr_language_set_name (self, g_value_get_string (value));
       break;
     case PROP_WORD_REGEX:
-      g_free (self->word_regex);
-      self->word_regex = g_value_dup_string (value);
+      lr_language_set_word_regex (self, g_value_get_string (value));
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -110,10 +107,23 @@ lr_language_new (int id, const gchar *code, const gchar *name, const gchar *word
     LR_TYPE_LANGUAGE, "id", id, "code", code, "name", name, "word-regex", word_regex, NULL);
 }
 
+void
+lr_language_set_id (LrLanguage *self, int id)
+{
+  self->id = id;
+}
+
 int
 lr_language_get_id (LrLanguage *self)
 {
   return self->id;
+}
+
+void
+lr_language_set_code (LrLanguage *self, const gchar *code)
+{
+  g_free (self->code);
+  self->code = g_strdup (code);
 }
 
 const gchar *
@@ -122,10 +132,24 @@ lr_language_get_code (LrLanguage *self)
   return self->code;
 }
 
+void
+lr_language_set_name (LrLanguage *self, const gchar *name)
+{
+  g_free (self->name);
+  self->name = g_strdup (name);
+}
+
 const gchar *
 lr_language_get_name (LrLanguage *self)
 {
   return self->name;
+}
+
+void
+lr_language_set_word_regex (LrLanguage *self, const gchar *word_regex)
+{
+  g_free (self->word_regex);
+  self->word_regex = g_strdup (word_regex);
 }
 
 const gchar *

@@ -1,4 +1,5 @@
 #include "lr-language-manager-dialog.h"
+#include "lr-language-editor-dialog.h"
 
 struct _LrLanguageManagerDialog
 {
@@ -38,7 +39,21 @@ populate_languages (LrLanguageManagerDialog *self)
 static void
 new_cb (LrLanguageManagerDialog *self, GtkWidget *button)
 {
-  g_message ("new_cb ()");
+  LrLanguage *new_language = lr_language_new (0, "English", "en", "[a-zA-Z]+");
+  GtkWidget *dialog = lr_language_editor_dialog_new (new_language, FALSE);
+
+  gtk_window_set_transient_for (GTK_WINDOW (dialog), GTK_WINDOW (self));
+
+  int response = gtk_dialog_run (GTK_DIALOG (dialog));
+
+  gtk_widget_destroy (dialog);
+
+  if (response == GTK_RESPONSE_OK)
+    {
+      lr_database_insert_language (self->db, new_language);
+      populate_languages (self);
+    }
+  g_clear_object (&new_language);
 }
 
 static void

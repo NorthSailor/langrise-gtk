@@ -17,6 +17,8 @@ G_DECLARE_FINAL_TYPE (LrDatabase, lr_database, LR, DATABASE, GObject)
 LrDatabase *lr_database_new (gchar *path);
 void lr_database_close (LrDatabase *self);
 
+void lr_database_insert_language (LrDatabase *self, LrLanguage *language);
+
 void lr_database_populate_languages (LrDatabase *self, GListStore *store);
 void lr_database_populate_texts (LrDatabase *self, GListStore *store, LrLanguage *language);
 void
