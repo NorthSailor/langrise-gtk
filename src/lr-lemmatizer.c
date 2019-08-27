@@ -14,7 +14,7 @@ base_lemmatizer_suggestions (LrLemmatizer *self,
                              const char *text,
                              GList *selection)
 {
-  g_critical ("Base lemmatizer implementation called!");
+  g_warning ("Base lemmatizer implementation called!");
   return NULL;
 }
 
@@ -44,7 +44,7 @@ lr_lemmatizer_new_for_language (const gchar *code)
     return lr_db_lemmatizer_new ("pl.lemma");
   else
     {
-      g_critical ("No lemmatizer for language code: '%s'", code);
-      return NULL;
+      g_warning ("No lemmatizer for language code: '%s'", code);
+      return g_object_new (LR_TYPE_LEMMATIZER, NULL);
     }
 }

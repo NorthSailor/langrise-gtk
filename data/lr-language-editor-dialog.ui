@@ -114,47 +114,60 @@ If you're not familiar with regular expression syntax, you can leave it to the p
       </packing>
     </child>
     <child>
-      <object class="GtkLabel">
+      <object class="GtkBox" id="preset_box">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="margin_top">10</property>
-        <property name="label" translatable="yes">Common languages</property>
-        <attributes>
-          <attribute name="font-desc" value="Sans 17"/>
-        </attributes>
-      </object>
-      <packing>
-        <property name="expand">False</property>
-        <property name="fill">True</property>
-        <property name="position">1</property>
-      </packing>
-    </child>
-    <child>
-      <object class="GtkScrolledWindow">
-        <property name="height_request">300</property>
-        <property name="visible">True</property>
-        <property name="can_focus">True</property>
-        <property name="vexpand">True</property>
-        <property name="shadow_type">in</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">5</property>
         <child>
-          <object class="GtkViewport">
+          <object class="GtkLabel">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="margin_top">10</property>
+            <property name="label" translatable="yes">Common languages</property>
+            <attributes>
+              <attribute name="font-desc" value="Sans 17"/>
+            </attributes>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkScrolledWindow">
+            <property name="height_request">300</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
             <property name="vexpand">True</property>
+            <property name="shadow_type">in</property>
             <child>
-              <object class="GtkListBox" id="preset_listbox">
+              <object class="GtkViewport">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="vexpand">True</property>
+                <child>
+                  <object class="GtkListBox" id="preset_listbox">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="vexpand">True</property>
+                  </object>
+                </child>
               </object>
             </child>
           </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
         </child>
       </object>
       <packing>
         <property name="expand">False</property>
         <property name="fill">True</property>
-        <property name="position">2</property>
+        <property name="position">1</property>
       </packing>
     </child>
   </object>

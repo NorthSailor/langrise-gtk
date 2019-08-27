@@ -12,6 +12,7 @@ struct _LrLanguageEditorDialog
   GtkWidget *code_entry;
   GtkWidget *regex_entry;
 
+  GtkWidget *preset_box;
   GtkWidget *preset_listbox;
 
   /* 
@@ -100,6 +101,7 @@ lr_language_editor_dialog_init (LrLanguageEditorDialog *self)
   self->code_entry = GTK_WIDGET (gtk_builder_get_object (builder, "code_entry"));
   self->regex_entry = GTK_WIDGET (gtk_builder_get_object (builder, "regex_entry"));
 
+  self->preset_box = GTK_WIDGET (gtk_builder_get_object (builder, "preset_box"));
   self->preset_listbox = GTK_WIDGET (gtk_builder_get_object (builder, "preset_listbox"));
 
   g_signal_connect_swapped (self->name_entry, "changed", (GCallback)preset_edited, self);
@@ -146,6 +148,17 @@ lr_language_editor_dialog_constructed (GObject *object)
       gchar *title = g_strdup_printf ("Edit language '%s'", lr_language_get_name (self->language));
       gtk_window_set_title (GTK_WINDOW (self), title);
       g_free (title);
+
+      /* Load the language settings into the entries */
+      gtk_entry_set_text (GTK_ENTRY (self->name_entry), lr_language_get_name (self->language));
+      gtk_entry_set_text (GTK_ENTRY (self->code_entry), lr_language_get_code (self->language));
+      gtk_entry_set_text (GTK_ENTRY (self->regex_entry),
+                          lr_language_get_word_regex (self->language));
+
+      /* Disable the presets and editing of the code or word regex */
+      gtk_widget_set_sensitive (self->code_entry, FALSE);
+      gtk_widget_set_sensitive (self->regex_entry, FALSE);
+      gtk_widget_hide (self->preset_box);
     }
   else
     {
@@ -161,14 +174,6 @@ lr_language_editor_dialog_constructed (GObject *object)
     }
 
   G_OBJECT_CLASS (lr_language_editor_dialog_parent_class)->constructed (object);
-}
-
-static void
-lr_language_editor_dialog_finalize (GObject *object)
-{
-  LrLanguageEditorDialog *self = LR_LANGUAGE_EDITOR_DIALOG (object);
-
-  G_OBJECT_CLASS (lr_language_editor_dialog_parent_class)->finalize (object);
 }
 
 static void
@@ -196,7 +201,6 @@ static void
 lr_language_editor_dialog_class_init (LrLanguageEditorDialogClass *klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
-  object_class->finalize = lr_language_editor_dialog_finalize;
   object_class->constructed = lr_language_editor_dialog_constructed;
   object_class->set_property = lr_language_editor_dialog_set_property;
 

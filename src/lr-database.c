@@ -16,6 +16,12 @@ struct _LrDatabase
   /* Insert a language */
   sqlite3_stmt *insert_language;
 
+  /* Update a language by ID */
+  sqlite3_stmt *update_language;
+
+  /* Delete a language by ID (and all related content, assuming cascade delete) */
+  sqlite3_stmt *delete_language;
+
   /* Get all texts in a language */
   sqlite3_stmt *text_by_lang_stmt;
 
@@ -80,6 +86,15 @@ prepare_sql_statements (LrDatabase *db)
               -1,
               &db->insert_language,
               NULL) == SQLITE_OK);
+
+  g_assert (
+    sqlite3_prepare_v2 (
+      db->db, "UPDATE Languages SET Name = ?2 WHERE ID = ?1;", -1, &db->update_language, NULL) ==
+    SQLITE_OK);
+
+  g_assert (sqlite3_prepare_v2 (
+              db->db, "DELETE FROM Languages WHERE ID = ?1;", -1, &db->delete_language, NULL) ==
+            SQLITE_OK);
 
   g_assert (sqlite3_prepare_v2 (
               db->db,
@@ -172,6 +187,8 @@ free_sql_statements (LrDatabase *db)
 {
   sqlite3_finalize (db->lang_stmt);
   sqlite3_finalize (db->insert_language);
+  sqlite3_finalize (db->update_language);
+  sqlite3_finalize (db->delete_language);
   sqlite3_finalize (db->text_by_lang_stmt);
   sqlite3_finalize (db->text_text_by_id);
   sqlite3_finalize (db->insert_text);
@@ -308,6 +325,35 @@ lr_database_insert_language (LrDatabase *self, LrLanguage *language)
   sqlite3_bind_text (stmt, 1, lr_language_get_code (language), -1, NULL);
   sqlite3_bind_text (stmt, 2, lr_language_get_name (language), -1, NULL);
   sqlite3_bind_text (stmt, 3, lr_language_get_word_regex (language), -1, NULL);
+
+  g_assert (sqlite3_step (stmt) == SQLITE_DONE);
+}
+
+void
+lr_database_update_language (LrDatabase *self, LrLanguage *language)
+{
+  g_assert (LR_IS_DATABASE (self));
+  g_assert (LR_IS_LANGUAGE (language));
+
+  sqlite3_stmt *stmt = self->update_language;
+  sqlite3_reset (stmt);
+
+  sqlite3_bind_int (stmt, 1, lr_language_get_id (language));
+  sqlite3_bind_text (stmt, 2, lr_language_get_name (language), -1, NULL);
+
+  g_assert (sqlite3_step (stmt) == SQLITE_DONE);
+}
+
+void
+lr_database_delete_language (LrDatabase *self, LrLanguage *language)
+{
+  g_assert (LR_IS_DATABASE (self));
+  g_assert (LR_IS_LANGUAGE (language));
+
+  sqlite3_stmt *stmt = self->delete_language;
+  sqlite3_reset (stmt);
+
+  sqlite3_bind_int (stmt, 1, lr_language_get_id (language));
 
   g_assert (sqlite3_step (stmt) == SQLITE_DONE);
 }

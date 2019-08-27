@@ -59,13 +59,51 @@ new_cb (LrLanguageManagerDialog *self, GtkWidget *button)
 static void
 edit_cb (LrLanguageManagerDialog *self, GtkWidget *button)
 {
-  g_message ("edit_cb ()");
+  g_assert (LR_IS_LANGUAGE (self->selected_language));
+  GtkWidget *dialog = lr_language_editor_dialog_new (self->selected_language, TRUE);
+
+  gtk_window_set_transient_for (GTK_WINDOW (dialog), GTK_WINDOW (self));
+
+  int response = gtk_dialog_run (GTK_DIALOG (dialog));
+
+  gtk_widget_destroy (dialog);
+
+  if (response == GTK_RESPONSE_OK)
+    {
+      lr_database_update_language (self->db, self->selected_language);
+      populate_languages (self);
+    }
 }
 
 static void
 delete_cb (LrLanguageManagerDialog *self, GtkWidget *button)
 {
-  g_message ("delete_cb ()");
+  g_assert (LR_IS_LANGUAGE (self->selected_language));
+  LrLanguage *language = self->selected_language;
+
+  GtkWidget *message_box = gtk_message_dialog_new_with_markup (
+    GTK_WINDOW (self),
+    GTK_DIALOG_USE_HEADER_BAR | GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+    GTK_MESSAGE_WARNING,
+    GTK_BUTTONS_YES_NO,
+    "WARNING: This will <b>permanently</b> delete all texts and vocabulary in <b>%s "
+    "(%s)</b>."
+    "\nThis operation <i>cannot</i> be undone!",
+    lr_language_get_name (language),
+    lr_language_get_code (language));
+
+  gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (message_box),
+                                            "Are you absolutely sure?");
+
+  int response = gtk_dialog_run (GTK_DIALOG (message_box));
+  gtk_widget_destroy (message_box);
+
+  if (response == GTK_RESPONSE_YES)
+    {
+      /* Delete from the database and repopulate */
+      lr_database_delete_language (self->db, language);
+      populate_languages (self);
+    }
 }
 
 static void
