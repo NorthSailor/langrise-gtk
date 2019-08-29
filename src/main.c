@@ -2,6 +2,7 @@
 #include <gtk/gtk.h>
 #include <sqlite3.h>
 #include <stdio.h>
+#include "common.h"
 #include "lr-database.h"
 #include "lr-main-window.h"
 
@@ -48,7 +49,7 @@ get_database_path ()
 {
   /* Get the expected path for the database */
   gchar *langrise_config_dir =
-    g_build_path (G_DIR_SEPARATOR_S, g_get_user_data_dir (), "langrise", NULL);
+    g_build_path (G_DIR_SEPARATOR_S, g_get_user_data_dir (), CONFIG_DIR_NAME, NULL);
 
   /* Create the config directory if it doesn't exist */
   g_mkdir_with_parents (langrise_config_dir, 0770);

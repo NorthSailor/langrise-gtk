@@ -12,6 +12,7 @@
         <property name="hexpand">True</property>
         <property name="vexpand">True</property>
         <property name="shadow_type">in</property>
+        <property name="propagate_natural_width">True</property>
         <child>
           <object class="GtkViewport">
             <property name="visible">True</property>
@@ -50,27 +51,28 @@
       </packing>
     </child>
     <child>
-      <object class="GtkBox">
+      <object class="GtkBox" id="right_panel_box">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="halign">end</property>
-        <property name="valign">start</property>
         <property name="margin_left">20</property>
         <property name="margin_right">20</property>
         <property name="margin_top">20</property>
         <property name="margin_bottom">20</property>
+        <property name="resize_mode">queue</property>
         <property name="orientation">vertical</property>
         <property name="baseline_position">top</property>
         <child>
           <object class="GtkStack" id="word_stack">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="valign">start</property>
             <child>
               <object class="GtkBox">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="margin_left">10</property>
                 <property name="margin_right">10</property>
+                <property name="vexpand">True</property>
                 <property name="orientation">vertical</property>
                 <property name="spacing">10</property>
                 <child>

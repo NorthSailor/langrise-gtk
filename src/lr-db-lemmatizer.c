@@ -63,7 +63,7 @@ lr_db_lemmatizer_constructed (GObject *object)
     }
 
   g_assert (sqlite3_prepare_v2 (
-              self->db, "SELECT Lexeme FROM Forms WHERE Form = ?;", -1, &self->query, NULL) ==
+              self->db, "SELECT Lemma FROM Forms WHERE Form = ?;", -1, &self->query, NULL) ==
             SQLITE_OK);
 }
 

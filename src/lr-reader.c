@@ -1,4 +1,5 @@
 #include "lr-reader.h"
+#include "lr-dictionary.h"
 #include "lr-splitter.h"
 #include "lr-lemmatizer.h"
 #include "lr-lemma-suggestion.h"
@@ -24,6 +25,8 @@ struct _LrReader
   LrLemmatizer *lemmatizer;
 
   GtkWidget *textview;
+  GtkWidget *right_panel_box;
+  GtkWidget *dictionary;
 
   GtkWidget *word_stack;
   GtkWidget *lemma_label;
@@ -496,6 +499,12 @@ lr_reader_init (LrReader *self)
                            NULL);
 
   self->instance_store = g_list_store_new (LR_TYPE_LEMMA_INSTANCE);
+
+  /* Create the dictionary widget and add it to the right panel */
+  self->dictionary = lr_dictionary_new ();
+  gtk_box_pack_end (GTK_BOX (self->right_panel_box), self->dictionary, TRUE, TRUE, 0);
+
+  gtk_widget_set_valign (self->dictionary, GTK_ALIGN_END);
 }
 
 static void
@@ -524,6 +533,7 @@ lr_reader_class_init (LrReaderClass *klass)
   gtk_widget_class_set_template_from_resource (widget_class, "/com/langrise/Langrise/lr-reader.ui");
 
   gtk_widget_class_bind_template_child (widget_class, LrReader, textview);
+  gtk_widget_class_bind_template_child (widget_class, LrReader, right_panel_box);
   gtk_widget_class_bind_template_child (widget_class, LrReader, suggestion_listbox);
 
   gtk_widget_class_bind_template_child (widget_class, LrReader, word_stack);

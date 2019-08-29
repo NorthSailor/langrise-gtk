@@ -3,6 +3,8 @@
 	<gresource prefix="/com/langrise/Langrise">
 		<file>style.css</file>
 		<file>schema.sql</file>
+		<file>lr-dictionary.ui</file>
+		<file>lr-goldendict-provider.ui</file>
 		<file>lr-main-window.ui</file>
 		<file>lr-text-selector.ui</file>
 		<file>lr-text-selector-row.ui</file>
