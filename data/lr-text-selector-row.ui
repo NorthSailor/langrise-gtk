@@ -17,6 +17,7 @@
         <property name="can_focus">False</property>
         <property name="halign">start</property>
         <property name="label" translatable="yes">Text title</property>
+        <property name="ellipsize">end</property>
         <attributes>
           <attribute name="font-desc" value="Sans 15"/>
         </attributes>

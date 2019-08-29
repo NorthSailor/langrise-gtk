@@ -2,6 +2,11 @@
 <!-- Generated with glade 3.22.1 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
+  <object class="GtkImage" id="search_icon">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">system-search-symbolic</property>
+  </object>
   <template class="LrReader" parent="GtkBox">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
@@ -11,20 +16,16 @@
         <property name="can_focus">True</property>
         <property name="hexpand">True</property>
         <property name="vexpand">True</property>
+        <property name="hscrollbar_policy">never</property>
         <property name="shadow_type">in</property>
-        <property name="propagate_natural_width">True</property>
         <child>
           <object class="GtkViewport">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="hexpand">True</property>
-            <property name="vexpand">True</property>
             <child>
               <object class="GtkTextView" id="textview">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="hexpand">True</property>
-                <property name="vexpand">True</property>
                 <property name="pixels_above_lines">10</property>
                 <property name="pixels_below_lines">10</property>
                 <property name="pixels_inside_wrap">10</property>
@@ -36,6 +37,7 @@
                 <property name="bottom_margin">20</property>
                 <property name="cursor_visible">False</property>
                 <property name="accepts_tab">False</property>
+                <property name="monospace">True</property>
                 <style>
                   <class name="reader"/>
                 </style>
@@ -58,6 +60,7 @@
         <property name="margin_right">20</property>
         <property name="margin_top">20</property>
         <property name="margin_bottom">20</property>
+        <property name="vexpand">True</property>
         <property name="resize_mode">queue</property>
         <property name="orientation">vertical</property>
         <property name="baseline_position">top</property>
@@ -65,7 +68,8 @@
           <object class="GtkStack" id="word_stack">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="valign">start</property>
+            <property name="vexpand">True</property>
+            <property name="vhomogeneous">False</property>
             <child>
               <object class="GtkBox">
                 <property name="visible">True</property>
@@ -74,13 +78,40 @@
                 <property name="margin_right">10</property>
                 <property name="vexpand">True</property>
                 <property name="orientation">vertical</property>
-                <property name="spacing">10</property>
+                <property name="spacing">9</property>
                 <child>
-                  <object class="GtkEntry" id="root_form_entry">
+                  <object class="GtkBox">
                     <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="placeholder_text" translatable="yes">Root form</property>
-                    <signal name="changed" handler="root_form_changed_cb" object="mark_instance_button" swapped="no"/>
+                    <property name="can_focus">False</property>
+                    <property name="spacing">10</property>
+                    <child>
+                      <object class="GtkEntry" id="root_form_entry">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="hexpand">True</property>
+                        <property name="placeholder_text" translatable="yes">Root form</property>
+                        <signal name="changed" handler="root_form_changed_cb" object="mark_instance_button" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkButton">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <property name="image">search_icon</property>
+                        <signal name="clicked" handler="lookup_root_form_cb" object="LrReader" swapped="yes"/>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -103,18 +134,58 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkListBox" id="suggestion_listbox">
-                    <property name="width_request">200</property>
+                  <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="vexpand">True</property>
+                    <property name="margin_top">20</property>
+                    <property name="label" translatable="yes">&lt;b&gt;Lemma suggestions&lt;/b&gt;</property>
+                    <property name="use_markup">True</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
-                    <property name="padding">10</property>
-                    <property name="pack_type">end</property>
                     <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="lemmatizer_note_label">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="justify">center</property>
+                    <property name="ellipsize">end</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkScrolledWindow" id="suggestion_scrolled_window">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="shadow_type">in</property>
+                    <child>
+                      <object class="GtkViewport">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="vexpand">True</property>
+                        <child>
+                          <object class="GtkListBox" id="suggestion_listbox">
+                            <property name="width_request">200</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="vexpand">True</property>
+                            <signal name="selected-rows-changed" handler="suggestion_selection_changed_cb" object="LrReader" swapped="yes"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">4</property>
                   </packing>
                 </child>
               </object>
@@ -281,6 +352,20 @@ to mark a new instance</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
+                <child>
+                  <object class="GtkButton">
+                    <property name="label" translatable="yes">Look up in dictionary</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <signal name="clicked" handler="lookup_instance_cb" object="LrReader" swapped="yes"/>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
               </object>
               <packing>
                 <property name="name">edit-instance</property>
@@ -290,7 +375,7 @@ to mark a new instance</property>
             </child>
           </object>
           <packing>
-            <property name="expand">False</property>
+            <property name="expand">True</property>
             <property name="fill">True</property>
             <property name="position">0</property>
           </packing>

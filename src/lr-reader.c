@@ -33,6 +33,7 @@ struct _LrReader
   GtkWidget *translation_entry;
   GtkWidget *instance_note_entry;
 
+  GtkWidget *lemmatizer_note_label;
   GtkWidget *root_form_entry;
 
   GtkTextTag *selection_tag;
@@ -47,6 +48,7 @@ struct _LrReader
 
   GListStore *suggestions;
   GtkWidget *suggestion_listbox;
+  GtkWidget *suggestion_scrolled_window;
 
   GListStore *instance_store;
 
@@ -167,7 +169,12 @@ selection_changed (LrReader *self)
 
   gchar *message = lr_lemmatizer_populate_suggestions (
     self->lemmatizer, self->suggestions, lr_text_get_text (self->text), self->selection);
+  gtk_label_set_text (GTK_LABEL (self->lemmatizer_note_label), message);
   g_free (message);
+
+  /* If there are no suggestions, hide the list box */
+  int n_suggestions = g_list_model_get_n_items (G_LIST_MODEL (self->suggestions));
+  gtk_widget_set_visible (self->suggestion_scrolled_window, n_suggestions > 0);
 }
 
 static void
@@ -326,6 +333,14 @@ lr_reader_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer
 }
 
 static void
+lookup_root_form_cb (LrReader *self, GtkButton *button)
+{
+  if (gtk_entry_get_text_length (GTK_ENTRY (self->root_form_entry)))
+    lr_dictionary_lookup (LR_DICTIONARY (self->dictionary),
+                          gtk_entry_get_text (GTK_ENTRY (self->root_form_entry)));
+}
+
+static void
 mark_instance_cb (GtkButton *button, LrReader *self)
 {
   const gchar *root_form = gtk_entry_get_text (GTK_ENTRY (self->root_form_entry));
@@ -437,15 +452,73 @@ remove_instance_cb (LrReader *self, GtkWidget *button)
   gtk_stack_set_visible_child_name (GTK_STACK (self->word_stack), "no-selection");
 }
 
+static void
+lookup_instance_cb (LrReader *self, GtkWidget *button)
+{
+  g_assert (LR_IS_READER (self));
+  g_assert (LR_IS_LEMMA (self->active_lemma));
+
+  lr_dictionary_lookup (LR_DICTIONARY (self->dictionary), lr_lemma_get_lemma (self->active_lemma));
+}
+
+static void
+suggestion_selection_changed_cb (LrReader *self, GtkWidget *listbox)
+{
+  g_assert (LR_IS_READER (self));
+  g_assert (GTK_IS_LIST_BOX (listbox));
+
+  /* Get the current selection, and if a row is selected, copy the lemma suggestion text in
+   * the lemma entry. */
+
+  GtkListBoxRow *row = gtk_list_box_get_selected_row (GTK_LIST_BOX (listbox));
+
+  if (row != NULL)
+    {
+      int row_id = gtk_list_box_row_get_index (row);
+      LrLemmaSuggestion *suggestion =
+        g_list_model_get_item (G_LIST_MODEL (self->suggestions), row_id);
+      gtk_entry_set_text (GTK_ENTRY (self->root_form_entry),
+                          lr_lemma_suggestion_get_lemma (suggestion));
+    }
+}
+
+typedef struct
+{
+  LrReader *self;
+  const gchar *text;
+} suggestion_lookup_data_t;
+
+static void
+lookup_lemma_suggestion (GtkWidget *button, suggestion_lookup_data_t *data)
+{
+  lr_dictionary_lookup (LR_DICTIONARY (data->self->dictionary), data->text);
+}
+
 static GtkWidget *
-create_widget_for_lemma_suggestion (gpointer item, gpointer user_data)
+create_widget_for_lemma_suggestion (gpointer item, LrReader *self)
 {
   LrLemmaSuggestion *suggestion = LR_LEMMA_SUGGESTION (item);
   GtkWidget *row = gtk_list_box_row_new ();
 
-  gtk_container_add (GTK_CONTAINER (row),
-                     gtk_label_new (lr_lemma_suggestion_get_lemma (suggestion)));
+  GtkBuilder *builder =
+    gtk_builder_new_from_resource ("/com/langrise/Langrise/lr-lemma-suggestion.ui");
+
+  GtkWidget *box = GTK_WIDGET (gtk_builder_get_object (builder, "box"));
+  GtkWidget *label = GTK_WIDGET (gtk_builder_get_object (builder, "suggestion_label"));
+  gtk_label_set_text (GTK_LABEL (label), lr_lemma_suggestion_get_lemma (suggestion));
+
+  GtkWidget *button = GTK_WIDGET (gtk_builder_get_object (builder, "lookup_button"));
+  suggestion_lookup_data_t *data = g_malloc (sizeof (suggestion_lookup_data_t));
+  data->self = self;
+  data->text = lr_lemma_suggestion_get_lemma (suggestion);
+
+  g_signal_connect_data (
+    button, "clicked", (GCallback)lookup_lemma_suggestion, data, (GClosureNotify)g_free, 0);
+
+  gtk_container_add (GTK_CONTAINER (row), box);
   gtk_widget_show_all (row);
+
+  g_object_unref (builder);
 
   return row;
 }
@@ -494,15 +567,15 @@ lr_reader_init (LrReader *self)
 
   gtk_list_box_bind_model (GTK_LIST_BOX (self->suggestion_listbox),
                            G_LIST_MODEL (self->suggestions),
-                           create_widget_for_lemma_suggestion,
-                           NULL,
+                           (GtkListBoxCreateWidgetFunc)create_widget_for_lemma_suggestion,
+                           self,
                            NULL);
 
   self->instance_store = g_list_store_new (LR_TYPE_LEMMA_INSTANCE);
 
   /* Create the dictionary widget and add it to the right panel */
   self->dictionary = lr_dictionary_new ();
-  gtk_box_pack_end (GTK_BOX (self->right_panel_box), self->dictionary, TRUE, TRUE, 0);
+  gtk_box_pack_start (GTK_BOX (self->right_panel_box), self->dictionary, FALSE, FALSE, 0);
 
   gtk_widget_set_valign (self->dictionary, GTK_ALIGN_END);
 }
@@ -535,18 +608,23 @@ lr_reader_class_init (LrReaderClass *klass)
   gtk_widget_class_bind_template_child (widget_class, LrReader, textview);
   gtk_widget_class_bind_template_child (widget_class, LrReader, right_panel_box);
   gtk_widget_class_bind_template_child (widget_class, LrReader, suggestion_listbox);
+  gtk_widget_class_bind_template_child (widget_class, LrReader, suggestion_scrolled_window);
 
   gtk_widget_class_bind_template_child (widget_class, LrReader, word_stack);
   gtk_widget_class_bind_template_child (widget_class, LrReader, lemma_label);
   gtk_widget_class_bind_template_child (widget_class, LrReader, translation_entry);
   gtk_widget_class_bind_template_child (widget_class, LrReader, instance_note_entry);
   gtk_widget_class_bind_template_child (widget_class, LrReader, root_form_entry);
+  gtk_widget_class_bind_template_child (widget_class, LrReader, lemmatizer_note_label);
 
   gtk_widget_class_bind_template_callback (widget_class, root_form_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, translation_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, instance_note_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, remove_instance_cb);
+  gtk_widget_class_bind_template_callback (widget_class, lookup_instance_cb);
+  gtk_widget_class_bind_template_callback (widget_class, lookup_root_form_cb);
   gtk_widget_class_bind_template_callback (widget_class, mark_instance_cb);
+  gtk_widget_class_bind_template_callback (widget_class, suggestion_selection_changed_cb);
 }
 
 GtkWidget *

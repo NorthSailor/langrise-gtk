@@ -98,6 +98,8 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Text title</property>
+                    <property name="ellipsize">end</property>
+                    <property name="max_width_chars">20</property>
                     <attributes>
                       <attribute name="font-desc" value="Sans Bold 10"/>
                     </attributes>

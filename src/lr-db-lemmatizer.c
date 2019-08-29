@@ -144,7 +144,8 @@ db_lemmatizer_populate_suggestions (LrLemmatizer *base,
     }
 
   g_free (word);
-  return NULL;
+  int n_items = g_list_model_get_n_items (G_LIST_MODEL (store));
+  return g_strdup_printf ("%d possible %s", n_items, n_items == 1 ? "lemma" : "lemmas");
 }
 
 static void

@@ -9,6 +9,7 @@ struct _LrDictionary
   /* Instance variables */
   GtkWidget *provider_stack;
   GtkWidget *provider_combobox;
+  GtkWidget *search_entry;
 
   /* Providers */
   GtkWidget *goldendict_provider;
@@ -76,6 +77,7 @@ lr_dictionary_class_init (LrDictionaryClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class, LrDictionary, provider_combobox);
   gtk_widget_class_bind_template_child (widget_class, LrDictionary, provider_stack);
+  gtk_widget_class_bind_template_child (widget_class, LrDictionary, search_entry);
 
   gtk_widget_class_bind_template_callback (widget_class, provider_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, search_changed_cb);
@@ -85,4 +87,11 @@ GtkWidget *
 lr_dictionary_new ()
 {
   return g_object_new (LR_TYPE_DICTIONARY, NULL);
+}
+
+void
+lr_dictionary_lookup (LrDictionary *self, const gchar *term)
+{
+  gtk_entry_set_text (GTK_ENTRY (self->search_entry), term);
+  search_changed_cb (self, self->search_entry);
 }

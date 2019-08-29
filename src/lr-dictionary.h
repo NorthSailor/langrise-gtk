@@ -9,6 +9,7 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE (LrDictionary, lr_dictionary, LR, DICTIONARY, GtkBox)
 
 GtkWidget *lr_dictionary_new ();
+void lr_dictionary_lookup (LrDictionary *self, const gchar *term);
 
 G_END_DECLS
 
