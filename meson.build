@@ -54,5 +54,7 @@ executable('langrise',
 		'src/lr-text-dialog.h',
 		'src/lr-text-selector.c',
 		'src/lr-text-selector.h',
+		'src/lr-vocabulary-view.c',
+		'src/lr-vocabulary-view.h',
 	],
 	dependencies : [glibdep, gtkdep, sqldep])

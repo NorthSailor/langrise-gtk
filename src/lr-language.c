@@ -8,6 +8,7 @@ struct _LrLanguage
   gchar *code;
   gchar *name;
   gchar *word_regex;
+  gchar *separator_regex;
 };
 
 G_DEFINE_TYPE (LrLanguage, lr_language, G_TYPE_OBJECT)
@@ -19,6 +20,7 @@ enum
   PROP_CODE,
   PROP_NAME,
   PROP_WORD_REGEX,
+  PROP_SEPARATOR_REGEX,
   N_PROPERTIES
 };
 
@@ -38,6 +40,8 @@ lr_language_finalize (GObject *obj)
 
   g_free (self->code);
   g_free (self->name);
+  g_free (self->word_regex);
+  g_free (self->separator_regex);
 
   G_OBJECT_CLASS (lr_language_parent_class)->finalize (obj);
 }
@@ -63,6 +67,9 @@ lr_language_set_property (GObject *object,
       break;
     case PROP_WORD_REGEX:
       lr_language_set_word_regex (self, g_value_get_string (value));
+      break;
+    case PROP_SEPARATOR_REGEX:
+      lr_language_set_separator_regex (self, g_value_get_string (value));
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -96,15 +103,35 @@ lr_language_class_init (LrLanguageClass *klass)
                                                          "[a-zA-Z]+",
                                                          G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE);
 
+  obj_properties[PROP_SEPARATOR_REGEX] =
+    g_param_spec_string ("separator-regex",
+                         "Separator regex",
+                         "Regular expression to identify sentence separators.",
+                         "",
+                         G_PARAM_WRITABLE | G_PARAM_WRITABLE);
 
   g_object_class_install_properties (object_class, N_PROPERTIES, obj_properties);
 }
 
 LrLanguage *
-lr_language_new (int id, const gchar *code, const gchar *name, const gchar *word_regex)
+lr_language_new (int id,
+                 const gchar *code,
+                 const gchar *name,
+                 const gchar *word_regex,
+                 const gchar *separator_regex)
 {
-  return g_object_new (
-    LR_TYPE_LANGUAGE, "id", id, "code", code, "name", name, "word-regex", word_regex, NULL);
+  return g_object_new (LR_TYPE_LANGUAGE,
+                       "id",
+                       id,
+                       "code",
+                       code,
+                       "name",
+                       name,
+                       "word-regex",
+                       word_regex,
+                       "separator-regex",
+                       separator_regex,
+                       NULL);
 }
 
 void
@@ -156,5 +183,18 @@ const gchar *
 lr_language_get_word_regex (LrLanguage *self)
 {
   return self->word_regex;
+}
+
+void
+lr_language_set_separator_regex (LrLanguage *self, const gchar *separator_regex)
+{
+  g_free (self->separator_regex);
+  self->separator_regex = g_strdup (separator_regex);
+}
+
+const gchar *
+lr_language_get_separator_regex (LrLanguage *self)
+{
+  return self->separator_regex;
 }
 

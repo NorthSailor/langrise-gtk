@@ -75,22 +75,25 @@ G_DEFINE_TYPE (LrDatabase, lr_database, G_TYPE_OBJECT)
 static void
 prepare_sql_statements (LrDatabase *db)
 {
-  g_assert (
-    sqlite3_prepare_v2 (
-      db->db, "SELECT ID, Code, Name, WordRegex FROM Languages;", -1, &db->lang_stmt, NULL) ==
-    SQLITE_OK);
+  g_assert (sqlite3_prepare_v2 (db->db,
+                                "SELECT ID, Code, Name, WordRegex, SeparatorRegex FROM Languages;",
+                                -1,
+                                &db->lang_stmt,
+                                NULL) == SQLITE_OK);
 
-  g_assert (sqlite3_prepare_v2 (
-              db->db,
-              "INSERT OR IGNORE INTO Languages (Code, Name, WordRegex) VALUES (?1, ?2, ?3);",
-              -1,
-              &db->insert_language,
-              NULL) == SQLITE_OK);
+  g_assert (sqlite3_prepare_v2 (db->db,
+                                "INSERT OR IGNORE INTO Languages (Code, Name, WordRegex, "
+                                "SeparatorRegex) VALUES (?1, ?2, ?3, ?4);",
+                                -1,
+                                &db->insert_language,
+                                NULL) == SQLITE_OK);
 
   g_assert (
-    sqlite3_prepare_v2 (
-      db->db, "UPDATE Languages SET Name = ?2 WHERE ID = ?1;", -1, &db->update_language, NULL) ==
-    SQLITE_OK);
+    sqlite3_prepare_v2 (db->db,
+                        "UPDATE Languages SET Name = ?2, SeparatorRegex = ?3 WHERE ID = ?1;",
+                        -1,
+                        &db->update_language,
+                        NULL) == SQLITE_OK);
 
   g_assert (sqlite3_prepare_v2 (
               db->db, "DELETE FROM Languages WHERE ID = ?1;", -1, &db->delete_language, NULL) ==
@@ -325,6 +328,7 @@ lr_database_insert_language (LrDatabase *self, LrLanguage *language)
   sqlite3_bind_text (stmt, 1, lr_language_get_code (language), -1, NULL);
   sqlite3_bind_text (stmt, 2, lr_language_get_name (language), -1, NULL);
   sqlite3_bind_text (stmt, 3, lr_language_get_word_regex (language), -1, NULL);
+  sqlite3_bind_text (stmt, 4, lr_language_get_separator_regex (language), -1, NULL);
 
   g_assert (sqlite3_step (stmt) == SQLITE_DONE);
 }
@@ -340,6 +344,7 @@ lr_database_update_language (LrDatabase *self, LrLanguage *language)
 
   sqlite3_bind_int (stmt, 1, lr_language_get_id (language));
   sqlite3_bind_text (stmt, 2, lr_language_get_name (language), -1, NULL);
+  sqlite3_bind_text (stmt, 3, lr_language_get_separator_regex (language), -1, NULL);
 
   g_assert (sqlite3_step (stmt) == SQLITE_DONE);
 }
@@ -374,8 +379,9 @@ lr_database_populate_languages (LrDatabase *self, GListStore *store)
       const gchar *code = (const gchar *)sqlite3_column_text (self->lang_stmt, 1);
       const gchar *name = (const gchar *)sqlite3_column_text (self->lang_stmt, 2);
       const gchar *word_regex = (const gchar *)sqlite3_column_text (self->lang_stmt, 3);
+      const gchar *separator_regex = (const gchar *)sqlite3_column_text (self->lang_stmt, 4);
 
-      LrLanguage *lang = lr_language_new (id, code, name, word_regex);
+      LrLanguage *lang = lr_language_new (id, code, name, word_regex, separator_regex);
 
       g_list_store_append (store, lang);
 

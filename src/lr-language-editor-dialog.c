@@ -11,6 +11,7 @@ struct _LrLanguageEditorDialog
   GtkWidget *name_entry;
   GtkWidget *code_entry;
   GtkWidget *regex_entry;
+  GtkWidget *sentence_sep_entry;
 
   GtkWidget *preset_box;
   GtkWidget *preset_listbox;
@@ -78,6 +79,8 @@ dialog_response (GtkDialog *dialog, int response_id)
       lr_language_set_code (self->language, gtk_entry_get_text (GTK_ENTRY (self->code_entry)));
       lr_language_set_word_regex (self->language,
                                   gtk_entry_get_text (GTK_ENTRY (self->regex_entry)));
+      lr_language_set_separator_regex (self->language,
+                                       gtk_entry_get_text (GTK_ENTRY (self->sentence_sep_entry)));
     }
 }
 
@@ -100,6 +103,7 @@ lr_language_editor_dialog_init (LrLanguageEditorDialog *self)
   self->name_entry = GTK_WIDGET (gtk_builder_get_object (builder, "name_entry"));
   self->code_entry = GTK_WIDGET (gtk_builder_get_object (builder, "code_entry"));
   self->regex_entry = GTK_WIDGET (gtk_builder_get_object (builder, "regex_entry"));
+  self->sentence_sep_entry = GTK_WIDGET (gtk_builder_get_object (builder, "sentence_sep_entry"));
 
   self->preset_box = GTK_WIDGET (gtk_builder_get_object (builder, "preset_box"));
   self->preset_listbox = GTK_WIDGET (gtk_builder_get_object (builder, "preset_listbox"));
@@ -107,6 +111,7 @@ lr_language_editor_dialog_init (LrLanguageEditorDialog *self)
   g_signal_connect_swapped (self->name_entry, "changed", (GCallback)preset_edited, self);
   g_signal_connect_swapped (self->code_entry, "changed", (GCallback)preset_edited, self);
   g_signal_connect_swapped (self->regex_entry, "changed", (GCallback)preset_edited, self);
+  g_signal_connect_swapped (self->sentence_sep_entry, "changed", (GCallback)preset_edited, self);
 
   g_signal_connect_swapped (
     self->preset_listbox, "selected-rows-changed", (GCallback)preset_picked, self);
@@ -154,6 +159,8 @@ lr_language_editor_dialog_constructed (GObject *object)
       gtk_entry_set_text (GTK_ENTRY (self->code_entry), lr_language_get_code (self->language));
       gtk_entry_set_text (GTK_ENTRY (self->regex_entry),
                           lr_language_get_word_regex (self->language));
+      gtk_entry_set_text (GTK_ENTRY (self->sentence_sep_entry),
+                          lr_language_get_separator_regex (self->language));
 
       /* Disable the presets and editing of the code or word regex */
       gtk_widget_set_sensitive (self->code_entry, FALSE);

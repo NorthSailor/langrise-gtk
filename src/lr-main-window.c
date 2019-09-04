@@ -4,6 +4,7 @@
 #include "lr-language-manager-dialog.h"
 #include "lr-reader.h"
 #include "lr-text-selector.h"
+#include "lr-vocabulary-view.h"
 
 struct _LrMainWindow
 {
@@ -26,6 +27,7 @@ struct _LrMainWindow
   GtkWidget *home_switcher;
 
   GtkWidget *text_selector;
+  GtkWidget *vocabulary_view;
   GtkWidget *reader;
 
   GMenu *lang_menu;
@@ -278,7 +280,7 @@ add_language_cb (LrMainWindow *self, GtkWidget *button)
   g_assert (LR_IS_MAIN_WINDOW (self));
   g_assert (GTK_IS_BUTTON (button));
 
-  LrLanguage *new_language = lr_language_new (0, "English", "en", "[a-zA-Z]+");
+  LrLanguage *new_language = lr_language_new (0, "English", "en", "[a-zA-Z]+", ". ");
   GtkWidget *dialog = lr_language_editor_dialog_new (new_language, FALSE);
 
   gtk_window_set_transient_for (GTK_WINDOW (dialog), GTK_WINDOW (self));
@@ -312,6 +314,11 @@ lr_main_window_constructed (GObject *obj)
   /* Add the text selector to the stack view */
   self->text_selector = lr_text_selector_new ();
   gtk_stack_add_titled (GTK_STACK (self->home_stack), self->text_selector, "texts", "Texts");
+
+  /* Add the vocabulary view to the stack view */
+  self->vocabulary_view = lr_vocabulary_view_new ();
+  gtk_stack_add_titled (
+    GTK_STACK (self->home_stack), self->vocabulary_view, "vocabulary", "Vocabulary");
 
   /* Add the reader to the global stack view */
   self->reader = lr_reader_new ();

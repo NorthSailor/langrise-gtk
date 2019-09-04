@@ -14,6 +14,7 @@
 		<file>lr-language-manager-row.ui</file>
 		<file>lr-lemma-suggestion.ui</file>
 		<file>lr-reader.ui</file>
+		<file>lr-vocabulary-view.ui</file>
 		<file>logo256.png</file>
 		<file>license.txt</file>
 	</gresource>

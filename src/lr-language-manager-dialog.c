@@ -39,7 +39,7 @@ populate_languages (LrLanguageManagerDialog *self)
 static void
 new_cb (LrLanguageManagerDialog *self, GtkWidget *button)
 {
-  LrLanguage *new_language = lr_language_new (0, "English", "en", "[a-zA-Z]+");
+  LrLanguage *new_language = lr_language_new (0, "English", "en", "[a-zA-Z]+", ". ");
   GtkWidget *dialog = lr_language_editor_dialog_new (new_language, FALSE);
 
   gtk_window_set_transient_for (GTK_WINDOW (dialog), GTK_WINDOW (self));
