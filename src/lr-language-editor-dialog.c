@@ -66,6 +66,7 @@ preset_picked (LrLanguageEditorDialog *self, GtkWidget *listbox)
   gtk_entry_set_text (GTK_ENTRY (self->name_entry), preset->name);
   gtk_entry_set_text (GTK_ENTRY (self->code_entry), preset->code);
   gtk_entry_set_text (GTK_ENTRY (self->regex_entry), preset->regex);
+  gtk_entry_set_text (GTK_ENTRY (self->sentence_sep_entry), preset->separator_regex);
 }
 
 static void

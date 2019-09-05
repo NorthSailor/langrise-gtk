@@ -7,8 +7,10 @@ struct _LrSplitter
   LrText *text;
 
   GRegex *word_regex;
+  GRegex *separator_regex;
 
   GArray *words;
+  GArray *separators;
 };
 
 enum
@@ -37,11 +39,17 @@ lr_splitter_constructed (GObject *obj)
 
   LrText *text = self->text;
   const gchar *word_regex_string = lr_language_get_word_regex (lr_text_get_language (text));
+  const gchar *separator_regex_string =
+    lr_language_get_separator_regex (lr_text_get_language (text));
 
   self->word_regex = g_regex_new (word_regex_string, 0, 0, NULL);
   g_assert (self->word_regex != NULL);
 
+  self->separator_regex = g_regex_new (separator_regex_string, 0, 0, NULL);
+  g_assert (self->separator_regex != NULL);
+
   self->words = g_array_new (FALSE, FALSE, sizeof (lr_range_t));
+  self->separators = g_array_new (FALSE, FALSE, sizeof (lr_range_t));
 
   /* Split the text */
   GMatchInfo *match_info;
@@ -50,11 +58,20 @@ lr_splitter_constructed (GObject *obj)
     {
       lr_range_t range;
       g_match_info_fetch_pos (match_info, 0, &range.start, &range.end);
-
       g_array_append_val (self->words, range);
-
       g_match_info_next (match_info, NULL);
     }
+
+  /* Find the separators as well */
+  g_regex_match (self->separator_regex, lr_text_get_text (text), 0, &match_info);
+  while (g_match_info_matches (match_info))
+    {
+      lr_range_t range;
+      g_match_info_fetch_pos (match_info, 0, &range.start, &range.end);
+      g_array_append_val (self->separators, range);
+      g_match_info_next (match_info, NULL);
+    }
+
   g_match_info_free (match_info);
 }
 
@@ -65,6 +82,7 @@ lr_splitter_finalize (GObject *object)
 
   g_array_free (self->words, TRUE);
   g_regex_unref (self->word_regex);
+  g_regex_unref (self->separator_regex);
 
   G_OBJECT_CLASS (lr_splitter_parent_class)->finalize (object);
 }
@@ -206,3 +224,105 @@ lr_splitter_selection_to_text (LrSplitter *self, GList *selection)
 
   return joint;
 }
+
+static gint
+compare_ranges (lr_range_t *first, lr_range_t *second)
+{
+  if (first->start < second->start)
+    return -1;
+  else if (first->start == second->start)
+    return 0;
+  else
+    return 1;
+}
+
+void
+lr_splitter_context_from_selection (LrSplitter *self,
+                                    GList **selection_ptr,
+                                    gchar **context,
+                                    gchar **answer,
+                                    const gchar *placeholder)
+{
+  g_assert (selection_ptr != NULL);
+  g_assert (*selection_ptr != NULL);
+
+  *selection_ptr = g_list_sort (*selection_ptr, (GCompareFunc)compare_ranges);
+  GList *selection = *selection_ptr;
+
+  /* Find the first and the last words in the selection */
+  lr_range_t *first = (lr_range_t *)selection->data, *last = (lr_range_t *)selection->data;
+
+  for (GList *l = selection; l != NULL; l = l->next)
+    {
+      lr_range_t *range = (lr_range_t *)l->data;
+
+      if (first->start > range->start)
+        first = range;
+
+      if (last->end < range->end)
+        last = range;
+    }
+
+  const gchar *text = lr_text_get_text (self->text);
+
+  /* Find the first separator before the first word and first after the last word */
+  lr_range_t *start_sep = NULL;
+  lr_range_t *end_sep = NULL;
+  for (int i = 0; i < self->separators->len; i++)
+    {
+      lr_range_t *sep = &g_array_index (self->separators, lr_range_t, i);
+
+      /* If the separator is before the word, set it as the start separator */
+      if (sep->end <= first->start)
+        start_sep = sep;
+
+      /* If no end separator has been set, and this one is after the last word,
+       * set it as the end separator, and also exit the loop */
+      if (!end_sep && (sep->start >= last->end))
+        {
+          end_sep = sep;
+          break;
+        }
+    }
+
+  lr_range_t sentence_range;
+  if (start_sep)
+    sentence_range.start = start_sep->end;
+  else
+    sentence_range.start = 0;
+
+  if (end_sep)
+    sentence_range.end = end_sep->end;
+  else
+    sentence_range.end = strlen (text);
+
+  GString *sentence_str =
+    g_string_new_len (text + sentence_range.start, sentence_range.end - sentence_range.start);
+
+  GString *answer_str = g_string_new (NULL);
+
+  /* Substitute the words for the placeholder */
+  /* When deleting a word and substituting it with the placeholder, the range offsets will be invalid.
+   * Therefore, the following offset is updated as offset += strlen(placeholder) - strlen(word) */
+  int placeholder_len = strlen (placeholder);
+  int offset = 0;
+  for (GList *l = selection; l != NULL; l = l->next)
+    {
+      lr_range_t *range = (lr_range_t *)l->data;
+
+      g_string_erase (
+        sentence_str, offset + range->start - sentence_range.start, range->end - range->start);
+      g_string_insert (sentence_str, offset + range->start - sentence_range.start, placeholder);
+
+      offset += placeholder_len - (range->end - range->start);
+
+      if (answer_str->len)
+        g_string_append_c (answer_str, ';');
+
+      g_string_append_len (answer_str, text + range->start, range->end - range->start);
+    }
+
+  *context = g_strstrip (g_string_free (sentence_str, FALSE));
+  *answer = g_string_free (answer_str, FALSE);
+}
+

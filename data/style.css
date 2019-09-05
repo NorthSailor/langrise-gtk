@@ -1,5 +1,10 @@
 textview.reader {
-	font: 24px sans;
+	font: 24px DejaVu Sans Mono;
+}
+
+entry.regex_entry {
+	font: 16px mono;
+	font-weight: bold;
 }
 
 popover {

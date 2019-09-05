@@ -100,6 +100,9 @@
             <property name="primary_icon_tooltip_markup" translatable="yes">Determines how words are split.
 If you're not familiar with regular expression syntax, you can leave it to the preset value.</property>
             <property name="placeholder_text" translatable="yes">e.g. "[a-zA-Z]+"</property>
+            <style>
+              <class name="regex_entry"/>
+            </style>
           </object>
           <packing>
             <property name="left_attach">1</property>
@@ -122,6 +125,9 @@ If you're not familiar with regular expression syntax, you can leave it to the p
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="placeholder_text" translatable="yes">e.g. ". "</property>
+            <style>
+              <class name="regex_entry"/>
+            </style>
           </object>
           <packing>
             <property name="left_attach">1</property>

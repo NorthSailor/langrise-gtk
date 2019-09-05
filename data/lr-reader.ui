@@ -30,7 +30,7 @@
                 <property name="pixels_below_lines">10</property>
                 <property name="pixels_inside_wrap">10</property>
                 <property name="editable">False</property>
-                <property name="wrap_mode">word</property>
+                <property name="wrap_mode">char</property>
                 <property name="left_margin">20</property>
                 <property name="right_margin">20</property>
                 <property name="top_margin">20</property>
