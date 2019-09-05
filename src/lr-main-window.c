@@ -51,6 +51,17 @@ G_DEFINE_TYPE (LrMainWindow, lr_main_window, GTK_TYPE_APPLICATION_WINDOW)
 
 enum
 {
+  PROP_0,
+  PROP_DATABASE,
+  N_PROPERTIES
+};
+
+static GParamSpec *obj_properties[N_PROPERTIES] = {
+  NULL,
+};
+
+enum
+{
   MODE_HOME = 1,
   MODE_READING
 };
@@ -128,8 +139,8 @@ switch_to_language (LrMainWindow *self)
 
       gtk_label_set_text (GTK_LABEL (self->lang_name_label), lr_language_get_name (next_lang));
 
-      /* TODO Alert the active subview */
       lr_text_selector_set_language (LR_TEXT_SELECTOR (self->text_selector), next_lang);
+      lr_vocabulary_view_set_language (LR_VOCABULARY_VIEW (self->vocabulary_view), next_lang);
 
       /* If we actually changed language, switch back to home mode */
       /* We switch back to home mode if we are already in home mode so that 
@@ -298,6 +309,14 @@ add_language_cb (LrMainWindow *self, GtkWidget *button)
 }
 
 static void
+text_modified_cb (LrTextSelector *selector, LrMainWindow *self)
+{
+  g_assert (LR_IS_TEXT_SELECTOR (selector));
+  g_assert (LR_IS_MAIN_WINDOW (self));
+  lr_vocabulary_view_set_language (LR_VOCABULARY_VIEW (self->vocabulary_view), self->active_lang);
+}
+
+static void
 lr_main_window_constructed (GObject *obj)
 {
   LrMainWindow *self = LR_MAIN_WINDOW (obj);
@@ -313,10 +332,11 @@ lr_main_window_constructed (GObject *obj)
 
   /* Add the text selector to the stack view */
   self->text_selector = lr_text_selector_new ();
+  lr_text_selector_set_database (LR_TEXT_SELECTOR (self->text_selector), self->db);
   gtk_stack_add_titled (GTK_STACK (self->home_stack), self->text_selector, "texts", "Texts");
 
   /* Add the vocabulary view to the stack view */
-  self->vocabulary_view = lr_vocabulary_view_new ();
+  self->vocabulary_view = lr_vocabulary_view_new (self->db);
   gtk_stack_add_titled (
     GTK_STACK (self->home_stack), self->vocabulary_view, "vocabulary", "Vocabulary");
 
@@ -326,6 +346,10 @@ lr_main_window_constructed (GObject *obj)
 
   /* Connect the "read-text" signal from the selector */
   g_signal_connect (self->text_selector, "read-text", (GCallback)read_text_cb, self);
+  g_signal_connect (self->text_selector, "text-modified", (GCallback)text_modified_cb, self);
+
+  /* Populate the language menu */
+  populate_languages (self);
 
   G_OBJECT_CLASS (lr_main_window_parent_class)->constructed (obj);
 }
@@ -354,11 +378,38 @@ lr_main_window_init (LrMainWindow *window)
 }
 
 static void
+lr_main_window_set_property (GObject *object,
+                             guint property_id,
+                             const GValue *value,
+                             GParamSpec *pspec)
+{
+  LrMainWindow *self = LR_MAIN_WINDOW (object);
+
+  switch (property_id)
+    {
+    case PROP_DATABASE:
+      lr_main_window_set_database (self, g_value_get_object (value));
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    }
+}
+
+static void
 lr_main_window_class_init (LrMainWindowClass *klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
   object_class->constructed = lr_main_window_constructed;
   object_class->finalize = lr_main_window_finalize;
+  object_class->set_property = lr_main_window_set_property;
+
+  obj_properties[PROP_DATABASE] = g_param_spec_object ("database",
+                                                       "Database",
+                                                       "The database",
+                                                       LR_TYPE_DATABASE,
+                                                       G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY);
+
+  g_object_class_install_properties (object_class, N_PROPERTIES, obj_properties);
 
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
   gtk_widget_class_set_template_from_resource (widget_class,
@@ -382,11 +433,12 @@ lr_main_window_class_init (LrMainWindowClass *klass)
 }
 
 GtkWidget *
-lr_main_window_new (GtkApplication *application)
+lr_main_window_new (GtkApplication *application, LrDatabase *db)
 {
   g_return_val_if_fail (application != NULL, NULL);
 
-  GtkWidget *window = g_object_new (LR_TYPE_MAIN_WINDOW, "application", application, NULL);
+  GtkWidget *window =
+    g_object_new (LR_TYPE_MAIN_WINDOW, "database", db, "application", application, NULL);
   return window;
 }
 
@@ -394,14 +446,9 @@ void
 lr_main_window_set_database (LrMainWindow *self, LrDatabase *db)
 {
   g_return_if_fail (LR_IS_MAIN_WINDOW (self));
-  g_return_if_fail (db != NULL);
+  g_return_if_fail (LR_IS_DATABASE (db));
 
   self->db = db;
-
-  /* Alert the subviews */
-  lr_text_selector_set_database (LR_TEXT_SELECTOR (self->text_selector), self->db);
-
-  populate_languages (self);
 }
 
 LrDatabase *

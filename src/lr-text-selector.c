@@ -1,6 +1,7 @@
 #include "lr-text-selector.h"
 #include "lr-text.h"
 #include "lr-text-dialog.h"
+#include "list-row-creators.h"
 
 struct _LrTextSelector
 {
@@ -27,6 +28,7 @@ G_DEFINE_TYPE (LrTextSelector, lr_text_selector, GTK_TYPE_BOX)
 enum
 {
   READ_TEXT,
+  TEXT_MODIFIED,
   N_SIGNALS
 };
 
@@ -58,6 +60,7 @@ new_text_cb (LrTextSelector *self, GtkWidget *button)
     {
       lr_database_insert_text (self->db, new_text);
       populate_text_list (self);
+      g_signal_emit (self, obj_signals[TEXT_MODIFIED], 0);
     }
 
   g_object_unref (new_text);
@@ -97,6 +100,7 @@ edit_text_cb (LrTextSelector *self, GtkWidget *button)
     {
       lr_database_update_text (self->db, self->selected_text);
       populate_text_list (self);
+      g_signal_emit (self, obj_signals[TEXT_MODIFIED], 0);
     }
 }
 
@@ -123,6 +127,7 @@ delete_text_cb (LrTextSelector *self, GtkWidget *button)
       lr_database_delete_text (self->db, self->selected_text);
       g_list_store_remove (self->text_store, self->selected_index);
       populate_text_list (self);
+      g_signal_emit (self, obj_signals[TEXT_MODIFIED], 0);
       break;
     case GTK_RESPONSE_NO:
     case GTK_RESPONSE_CANCEL:
@@ -130,29 +135,6 @@ delete_text_cb (LrTextSelector *self, GtkWidget *button)
     default:
       break;
     }
-}
-
-static GtkWidget *
-create_widget_for_text (LrText *text, gpointer user_data)
-{
-  GtkWidget *row = gtk_list_box_row_new ();
-
-  GtkBuilder *builder =
-    gtk_builder_new_from_resource ("/com/langrise/Langrise/lr-text-selector-row.ui");
-
-  GtkWidget *box = GTK_WIDGET (gtk_builder_get_object (builder, "box"));
-  GtkWidget *title_label = GTK_WIDGET (gtk_builder_get_object (builder, "title_label"));
-  GtkWidget *tags_label = GTK_WIDGET (gtk_builder_get_object (builder, "tags_label"));
-
-  gtk_label_set_text (GTK_LABEL (title_label), lr_text_get_title (text));
-  gtk_label_set_text (GTK_LABEL (tags_label), lr_text_get_tags (text));
-
-  gtk_container_add (GTK_CONTAINER (row), box);
-  gtk_widget_show_all (row);
-
-  g_object_unref (builder);
-
-  return row;
 }
 
 static void
@@ -220,7 +202,7 @@ lr_text_selector_class_init (LrTextSelectorClass *klass)
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
   object_class->finalize = lr_text_selector_finalize;
 
-  /* Register the signal */
+  /* Register the signals */
   obj_signals[READ_TEXT] = g_signal_new ("read-text",
                                          G_TYPE_FROM_CLASS (klass),
                                          G_SIGNAL_RUN_LAST,
@@ -231,6 +213,15 @@ lr_text_selector_class_init (LrTextSelectorClass *klass)
                                          G_TYPE_NONE,
                                          1,
                                          LR_TYPE_TEXT);
+  obj_signals[TEXT_MODIFIED] = g_signal_new ("text-modified",
+                                             G_TYPE_FROM_CLASS (klass),
+                                             G_SIGNAL_RUN_LAST,
+                                             0,
+                                             NULL,
+                                             NULL,
+                                             NULL,
+                                             G_TYPE_NONE,
+                                             0);
 
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
   gtk_widget_class_set_template_from_resource (widget_class,

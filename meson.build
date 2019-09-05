@@ -16,6 +16,8 @@ executable('langrise',
 	asresources,
 	[
 		'src/main.c',
+		'src/list-row-creators.c',
+		'src/list-row-creators.h',
 		'src/lr-reader.c',
 		'src/lr-reader.h',
 		'src/lr-database.c',

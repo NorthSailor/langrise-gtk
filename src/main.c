@@ -19,8 +19,7 @@ init_css ()
 static void
 activate_cb (GtkApplication *app, LrDatabase *db)
 {
-  GtkWidget *window = lr_main_window_new (app);
-  lr_main_window_set_database (LR_MAIN_WINDOW (window), db);
+  GtkWidget *window = lr_main_window_new (app, db);
 
   gtk_widget_show_all (window);
 }

@@ -236,6 +236,13 @@ compare_ranges (lr_range_t *first, lr_range_t *second)
     return 1;
 }
 
+/**
+ * Creates a cloze-like question from an instance.
+ *
+ * Replaces the words in the sentence with placeholder and concantenates
+ * all words with semicolons into answer. It sorts the selection_ptr list
+ * as a side effect.
+ */
 void
 lr_splitter_context_from_selection (LrSplitter *self,
                                     GList **selection_ptr,
