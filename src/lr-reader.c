@@ -196,6 +196,8 @@ open_lemma_from_active_instance (LrReader *self)
                       lr_lemma_get_translation (self->active_lemma));
 
   gtk_entry_set_text (GTK_ENTRY (self->instance_note_entry), lr_lemma_instance_get_note (instance));
+
+  gtk_widget_grab_focus (self->translation_entry);
 }
 
 static void
@@ -384,10 +386,6 @@ mark_instance_cb (GtkButton *button, LrReader *self)
   g_assert (instance_range != NULL); /* We just added it, it has to be there! */
 
   activate_instance (self, instance_range);
-
-  /* Activate the instance note entry,
-   * since it's what most users will want to edit */
-  gtk_widget_grab_focus (self->instance_note_entry);
 }
 
 /* Called when the root form entry is edited.
@@ -409,7 +407,6 @@ root_form_changed_cb (GtkEntry *entry, GtkWidget *mark_instance_button)
 static void
 translation_changed_cb (GtkEntry *entry, LrReader *self)
 {
-  g_assert (GTK_IS_ENTRY (entry));
   g_assert (LR_IS_READER (self));
   g_assert (LR_IS_LEMMA (self->active_lemma));
 
@@ -417,6 +414,8 @@ translation_changed_cb (GtkEntry *entry, LrReader *self)
 
   lr_lemma_set_translation (self->active_lemma, new_translation);
   lr_database_update_lemma (self->db, self->active_lemma);
+
+  gtk_widget_grab_focus (self->instance_note_entry);
 }
 
 static void
@@ -479,6 +478,9 @@ suggestion_selection_changed_cb (LrReader *self, GtkWidget *listbox)
         g_list_model_get_item (G_LIST_MODEL (self->suggestions), row_id);
       gtk_entry_set_text (GTK_ENTRY (self->root_form_entry),
                           lr_lemma_suggestion_get_lemma (suggestion));
+
+      /* Move the focus to the root form entry */
+      gtk_widget_grab_focus (self->root_form_entry);
     }
 }
 

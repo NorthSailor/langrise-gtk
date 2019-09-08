@@ -30,7 +30,7 @@
                 <property name="pixels_below_lines">10</property>
                 <property name="pixels_inside_wrap">10</property>
                 <property name="editable">False</property>
-                <property name="wrap_mode">char</property>
+                <property name="wrap_mode">word</property>
                 <property name="left_margin">20</property>
                 <property name="right_margin">20</property>
                 <property name="top_margin">20</property>
@@ -90,6 +90,7 @@
                         <property name="can_focus">True</property>
                         <property name="hexpand">True</property>
                         <property name="placeholder_text" translatable="yes">Root form</property>
+                        <signal name="activate" handler="mark_instance_cb" object="LrReader" swapped="no"/>
                         <signal name="changed" handler="root_form_changed_cb" object="mark_instance_button" swapped="no"/>
                       </object>
                       <packing>
@@ -299,6 +300,7 @@ to mark a new instance</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <signal name="activate" handler="translation_changed_cb" object="LrReader" swapped="no"/>
+                        <signal name="editing-done" handler="translation_changed_cb" object="LrReader" swapped="no"/>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
