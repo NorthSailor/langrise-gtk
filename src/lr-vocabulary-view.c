@@ -1,5 +1,6 @@
 #include "lr-vocabulary-view.h"
 #include "list-row-creators.h"
+#include "export-text.h"
 
 struct _LrVocabularyView
 {
@@ -36,17 +37,106 @@ lr_vocabulary_view_init (LrVocabularyView *self)
   gtk_widget_init_template (GTK_WIDGET (self));
 }
 
+static void
+export_csv (GtkWidget *toplevel, LrDatabase *db, GList *items)
+{
+  lr_export_text (toplevel, //
+                  db,
+                  items,
+                  "",
+                  "\n",
+                  ",",
+                  "Sentence,Answer,Lemma,Translation,Note\n",
+                  "",
+                  "CSV Files",
+                  "*.csv");
+}
+
+static void
+export_tsv (GtkWidget *toplevel, LrDatabase *db, GList *items)
+{
+  lr_export_text (toplevel, //
+                  db,
+                  items,
+                  "",
+                  "\n",
+                  "\t",
+                  "\n",
+                  "",
+                  "TSV files",
+                  "*.tsv");
+}
+
+static void
+export_latex (GtkWidget *toplevel, LrDatabase *db, GList *items)
+{
+  lr_export_text (toplevel, //
+                  db,
+                  items,
+                  "\\item{",
+                  "}\n",
+                  "}{",
+                  "",
+                  "",
+                  "LaTeX source files",
+                  "*.tex");
+}
+
+static void
+export_pdf (GtkWidget *toplevel, LrDatabase *db, GList *items)
+{
+  GtkWidget *dialog = gtk_message_dialog_new (GTK_WINDOW (toplevel),
+                                              GTK_DIALOG_DESTROY_WITH_PARENT,
+                                              GTK_MESSAGE_ERROR,
+                                              GTK_BUTTONS_CLOSE,
+                                              "PDF exporting is not yet supported!");
+  gtk_dialog_run (GTK_DIALOG (dialog));
+  gtk_widget_destroy (dialog);
+}
+
 typedef struct
 {
   const gchar *label;
+  void (*export) (GtkWidget *toplevel, LrDatabase *db, GList *items);
 } exporter_t;
 
 static exporter_t exporters[] = {
-  { "CSV" },
-  { "TSV" },
-  { "LaTeX" },
-  { "PDF" },
+  { "CSV", export_csv },
+  { "TSV", export_tsv },
+  { "LaTeX", export_latex },
+  { "PDF", export_pdf },
 };
+
+typedef struct
+{
+  LrVocabularyView *self;
+  exporter_t *exporter;
+} callback_argument;
+
+static void
+export_cb (GtkButton *sender, callback_argument *args)
+{
+  LrVocabularyView *self = args->self;
+  exporter_t *exporter = args->exporter;
+
+  GList *selected_rows = gtk_list_box_get_selected_rows (GTK_LIST_BOX (self->list_box));
+  GList *items = NULL;
+
+  for (GList *l = selected_rows; l != NULL; l = l->next)
+    {
+      GtkListBoxRow *row = GTK_LIST_BOX_ROW (l->data);
+      int index = gtk_list_box_row_get_index (row);
+      LrText *text = g_list_model_get_item (G_LIST_MODEL (self->text_store), index);
+      GList *text_items = lr_database_get_vocabulary_items_for_text (self->db, text);
+      items = g_list_concat (items, text_items);
+    }
+
+  exporter->export(gtk_widget_get_toplevel (GTK_WIDGET (self)), self->db, items);
+
+  g_list_free_full (items, (GDestroyNotify)lr_vocabulary_item_free);
+
+  g_list_free (selected_rows);
+}
 
 static void
 lr_vocabulary_view_constructed (GObject *obj)
@@ -54,11 +144,18 @@ lr_vocabulary_view_constructed (GObject *obj)
   LrVocabularyView *self = LR_VOCABULARY_VIEW (obj);
   g_assert (LR_IS_DATABASE (self->db));
 
-  int num_exporters = sizeof (exporters) / sizeof (exporter_t *);
+  int num_exporters = sizeof (exporters) / sizeof (exporter_t);
   for (int i = 0; i < num_exporters; i++)
     {
       GtkWidget *button = gtk_button_new_with_label (exporters[i].label);
       gtk_container_add (GTK_CONTAINER (self->exporter_box), button);
+
+      callback_argument *arg = g_malloc (sizeof (callback_argument));
+      arg->self = self;
+      arg->exporter = &exporters[i];
+
+      g_signal_connect_data (
+        button, "clicked", (GCallback)export_cb, arg, (GClosureNotify)g_free, 0);
     }
 
   self->text_store = g_list_store_new (LR_TYPE_TEXT);
@@ -109,8 +206,6 @@ selection_changed_cb (GtkListBox *box, LrVocabularyView *self)
   self->selected_rows = gtk_list_box_get_selected_rows (box);
 
   gtk_widget_set_sensitive (self->exporter_box, self->selected_rows != NULL);
-
-  g_message ("%d rows selected.", g_list_length (self->selected_rows));
 }
 
 static void

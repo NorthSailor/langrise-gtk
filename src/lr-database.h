@@ -41,6 +41,20 @@ void lr_database_insert_instance (LrDatabase *self, LrLemmaInstance *instance);
 
 void lr_database_delete_instance (LrDatabase *self, LrLemmaInstance *instance);
 
+/* Vocabulary export functions */
+typedef struct
+{
+  LrText *text;
+  char *words;
+  char *lemma;
+  char *translation;
+  char *note;
+} lr_vocabulary_item_t;
+
+GList *lr_database_get_vocabulary_items_for_text (LrDatabase *self, LrText *text);
+
+void lr_vocabulary_item_free (lr_vocabulary_item_t *self);
+
 G_END_DECLS
 
 #endif /* _lr_database_h */

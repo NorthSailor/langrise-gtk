@@ -63,6 +63,9 @@ struct _LrDatabase
 
   /* Remove orphaned lemma by ID */
   sqlite3_stmt *delete_orphaned_lemma_by_id;
+
+  /* Get vocabulary items for text */
+  sqlite3_stmt *vocabulary_by_text_id;
 };
 
 enum
@@ -183,6 +186,13 @@ prepare_sql_statements (LrDatabase *db)
                                 -1,
                                 &db->delete_orphaned_lemma_by_id,
                                 NULL) == SQLITE_OK);
+
+  g_assert (sqlite3_prepare_v2 (db->db,
+                                "SELECT Words, Lemma, Translation, Note FROM Instances"
+                                " INNER JOIN Lemmas WHERE TextID = ?1 AND LemmaID == Lemmas.ID",
+                                -1,
+                                &db->vocabulary_by_text_id,
+                                NULL) == SQLITE_OK);
 }
 
 static void
@@ -206,6 +216,7 @@ free_sql_statements (LrDatabase *db)
   sqlite3_finalize (db->insert_instance);
   sqlite3_finalize (db->delete_instance_by_id);
   sqlite3_finalize (db->delete_orphaned_lemma_by_id);
+  sqlite3_finalize (db->vocabulary_by_text_id);
 }
 
 static void
@@ -642,3 +653,46 @@ lr_database_delete_instance (LrDatabase *self, LrLemmaInstance *instance)
   sqlite3_bind_int (stmt, 1, lr_lemma_instance_get_lemma_id (instance));
   g_assert (sqlite3_step (stmt) == SQLITE_DONE);
 }
+
+GList *
+lr_database_get_vocabulary_items_for_text (LrDatabase *self, LrText *text)
+{
+  g_assert (LR_IS_DATABASE (self));
+  g_assert (LR_IS_TEXT (text));
+
+  sqlite3_stmt *stmt = self->vocabulary_by_text_id;
+  sqlite3_reset (stmt);
+
+  sqlite3_bind_int (stmt, 1, lr_text_get_id (text));
+
+  GList *items = NULL;
+
+  while (sqlite3_step (stmt) == SQLITE_ROW)
+    {
+      lr_vocabulary_item_t *item = (lr_vocabulary_item_t *)g_malloc (sizeof (*item));
+      const char *words = (const char *)sqlite3_column_text (stmt, 0);
+      const char *lemma = (const char *)sqlite3_column_text (stmt, 1);
+      const char *translation = (const char *)sqlite3_column_text (stmt, 2);
+      const char *note = (const char *)sqlite3_column_text (stmt, 3);
+
+      item->text = text;
+      item->words = g_strdup (words);
+      item->lemma = g_strdup (lemma);
+      item->translation = g_strdup (translation);
+      item->note = g_strdup (note);
+
+      items = g_list_append (items, item);
+    }
+
+  return items;
+}
+
+void
+lr_vocabulary_item_free (lr_vocabulary_item_t *self)
+{
+  g_free (self->words);
+  g_free (self->lemma);
+  g_free (self->translation);
+  g_free (self->note);
+}
+

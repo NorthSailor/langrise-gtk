@@ -16,6 +16,8 @@ executable('langrise',
 	asresources,
 	[
 		'src/main.c',
+		'src/export-text.c',
+		'src/export-text.h',
 		'src/list-row-creators.c',
 		'src/list-row-creators.h',
 		'src/lr-reader.c',
