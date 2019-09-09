@@ -1,0 +1,53 @@
+# This is an example PKGBUILD file. Use this as a start to creating your own,
+# and remove these comments. For more information, see 'man PKGBUILD'.
+# NOTE: Please fill out the license field for your package! If it is unknown,
+# then please put 'unknown'.
+
+# Maintainer: Your Name <youremail@domain.com>
+pkgname="langrise"
+pkgver="1.0"
+pkgrel=1
+epoch=
+pkgdesc="Learn L2 vocabulary in context."
+arch=('x86_64')
+url="https://gitlab.com/NorthSailor/langrise"
+license=('GPL')
+groups=()
+depends=('gtk3'
+	'sqlite')
+makedepends=('ninja'
+	'meson')
+checkdepends=()
+optdepends=()
+provides=()
+conflicts=()
+replaces=()
+backup=()
+options=()
+install=
+changelog=
+source=("$pkgname-$pkgver::git+ssh://git@gitlab.com/NorthSailor/langrise.git")
+noextract=()
+sha256sums=('SKIP')
+validpgpkeys=()
+
+prepare() {
+	cd "$pkgname-$pkgver"
+}
+
+build() {
+	cd "$pkgname-$pkgver"
+	mkdir -p build
+	meson --prefix=/usr --buildtype=plain build
+	ninja -v -C build
+}
+
+check() {
+	cd "$pkgname-$pkgver"
+}
+
+package() {
+	cd "$pkgname-$pkgver"
+	DESTDIR="$pkgdir/" ninja -C build install
+}
+
