@@ -63,7 +63,7 @@ populate_text_list (LrTextSelector *self)
 static void
 new_text_cb (LrTextSelector *self, GtkWidget *button)
 {
-  LrText *new_text = lr_text_new (0, self->lang, "", "");
+  LrText *new_text = lr_text_new (-1, self->lang, "", "");
   lr_text_set_text (new_text, "");
 
   GtkWidget *text_dialog = lr_text_dialog_new (new_text);

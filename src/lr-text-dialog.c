@@ -154,6 +154,15 @@ lr_text_dialog_set_text (LrTextDialog *self, LrText *text)
 {
   self->text = text;
 
+  /* If the text has a set, positive ID, disable editing to prevent a complete mess
+   * with the marked instances.
+   */
+  if (lr_text_get_id (text) > -1)
+    {
+      gtk_text_view_set_editable (GTK_TEXT_VIEW (self->textview), FALSE);
+      gtk_text_view_set_cursor_visible (GTK_TEXT_VIEW (self->textview), FALSE);
+    }
+
   /* Load the text data into the controls. */
   gtk_entry_set_text (GTK_ENTRY (self->title_entry), lr_text_get_title (self->text));
   gtk_entry_set_text (GTK_ENTRY (self->tags_entry), lr_text_get_tags (self->text));

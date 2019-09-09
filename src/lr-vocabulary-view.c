@@ -119,8 +119,8 @@ typedef struct
 } exporter_t;
 
 static exporter_t exporters[] = {
-  { "CSV", export_csv },
   { "TSV", export_tsv },
+  { "CSV", export_csv },
   { "LaTeX", export_latex },
   { "PDF", export_pdf },
 };

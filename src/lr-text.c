@@ -97,7 +97,7 @@ lr_text_class_init (LrTextClass *klass)
   object_class->set_property = lr_text_set_property;
 
   obj_properties[PROP_ID] = g_param_spec_int (
-    "id", "ID", "The ID of the text", 0, G_MAXINT, 0, G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE);
+    "id", "ID", "The ID of the text", -1, G_MAXINT, 0, G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE);
 
   obj_properties[PROP_LANGUAGE] = g_param_spec_object ("language",
                                                        "Language",
