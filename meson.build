@@ -61,4 +61,5 @@ executable('langrise',
 		'src/lr-vocabulary-view.c',
 		'src/lr-vocabulary-view.h',
 	],
-	dependencies : [glibdep, gtkdep, sqldep])
+	dependencies : [glibdep, gtkdep, sqldep],
+	install : true)
