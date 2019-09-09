@@ -1,3 +1,22 @@
+/* 
+ * Langrise, expanding L2 vocabulary in context.
+ * Copyright (C) 2019 Iason Barmparesos
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#include "common.h"
 #include "lr-main-window.h"
 #include "lr-database.h"
 #include "lr-language-editor-dialog.h"
@@ -233,24 +252,17 @@ about_cb (LrMainWindow *self, GtkWidget *button)
 {
   static const gchar *authors[] = { "Jason Barmparesos", NULL };
 
-  /* Load the license file. */
-  GBytes *bytes = g_resources_lookup_data (
-    "/com/langrise/Langrise/license.txt", G_RESOURCE_LOOKUP_FLAGS_NONE, NULL);
-
   gtk_show_about_dialog (GTK_WINDOW (self),
                          "program-name",
                          "Langrise",
                          "version",
-                         "0.1 pre-alpha",
+                         LANGRISE_VERSION,
                          "comments",
                          "Expanding L2 vocabulary in context.",
                          "copyright",
-                         "\u00A9 Jason Barmparesos 2019. All rights reserved.\n"
-                         "Licensed under the \"Fair Source 1, version 0.9\" license.",
-                         "license",
-                         g_bytes_get_data (bytes, NULL),
+                         COPYRIGHT_NOTICE,
                          "license-type",
-                         GTK_LICENSE_CUSTOM,
+                         GTK_LICENSE_GPL_3_0,
                          "wrap-license",
                          TRUE,
                          "logo",
@@ -259,7 +271,6 @@ about_cb (LrMainWindow *self, GtkWidget *button)
                          "authors",
                          authors,
                          NULL);
-  g_bytes_unref (bytes);
 }
 
 static void

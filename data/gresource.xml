@@ -16,6 +16,5 @@
 		<file>lr-reader.ui</file>
 		<file>lr-vocabulary-view.ui</file>
 		<file>logo256.png</file>
-		<file>license.txt</file>
 	</gresource>
 </gresources>
