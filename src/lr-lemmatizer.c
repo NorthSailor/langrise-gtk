@@ -41,7 +41,7 @@ LrLemmatizer *
 lr_lemmatizer_new_for_language (const gchar *code)
 {
   if (g_strcmp0 (code, "pl") == 0)
-    return lr_db_lemmatizer_new ("pl.lemma");
+    return lr_db_lemmatizer_new ("pl");
   else
     return g_object_new (LR_TYPE_LEMMATIZER, NULL);
 }

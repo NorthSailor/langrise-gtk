@@ -11,7 +11,7 @@
  *
  * CREATE TABLE "Forms" (
  *     Form TEXT COLLATE NOCASE,
- *     Lexeme TEXT
+ *     Lemma TEXT
  * );
  *
  * For optimal performance, the lemmatizer database should contain
@@ -52,15 +52,29 @@ lr_db_lemmatizer_constructed (GObject *object)
 {
   LrDbLemmatizer *self = LR_DB_LEMMATIZER (object);
 
-  int rc = sqlite3_open_v2 (self->path, &self->db, SQLITE_OPEN_READWRITE, NULL);
-
-  if (rc != SQLITE_OK)
+  self->db = NULL;
+  const gchar *const *data_dirs = g_get_system_data_dirs ();
+  for (const gchar *const *str = &data_dirs[0]; *str != NULL; str++)
     {
-      g_critical ("Failed to open lemma database at '%s'. SQLite Error: '%s'",
-                  self->path,
-                  sqlite3_errmsg (self->db));
-      sqlite3_close (self->db);
+      gchar *filename = g_strdup_printf ("%s.lemma", self->path);
+      gchar *path = g_build_filename (*str, "langrise", "lemma_dbs", filename, NULL);
+      g_free (filename);
+
+      int rc = sqlite3_open_v2 (path, &self->db, SQLITE_OPEN_READWRITE, NULL);
+      g_free (path);
+      if (rc != SQLITE_OK)
+        {
+          sqlite3_close (self->db);
+          self->db = NULL; /* This signifies that we didn't open the database */
+        }
+      else
+        {
+          break; /* We found and were able to open a database */
+        }
     }
+
+  if (!self->db)
+    return;
 
   g_assert (sqlite3_prepare_v2 (
               self->db, "SELECT Lemma FROM Forms WHERE Form = ?;", -1, &self->query, NULL) ==
@@ -119,6 +133,12 @@ db_lemmatizer_populate_suggestions (LrLemmatizer *base,
                                     GList *selection)
 {
   LrDbLemmatizer *self = LR_DB_LEMMATIZER (base);
+
+  if (self->db == NULL)
+    {
+      return g_strdup ("No lemma suggestions\nfor this language.");
+    }
+
   int selected_words = g_list_length (selection);
   if (selected_words > 1)
     {
