@@ -324,7 +324,7 @@ lr_splitter_context_from_selection (LrSplitter *self,
       offset += placeholder_len - (range->end - range->start);
 
       if (answer_str->len)
-        g_string_append_c (answer_str, ';');
+        g_string_append_c (answer_str, ' ');
 
       g_string_append_len (answer_str, text + range->start, range->end - range->start);
     }
