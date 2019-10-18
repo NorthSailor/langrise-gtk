@@ -1,5 +1,9 @@
 # Langrise
 
+To get started with Langrise, consult the Wiki.
+
+![screenshot](https://github.com/NorthSailor/langrise/raw/master/screenshots/main.png "Screenshot of Langrise")
+
 ## What is it?
 Langrise is a vocabulary building tool, which, although inspired by LearningWithTexts and LingQ, follows a more systematic approach to storing vocabulary in comparison to those tools.
 You can import your texts into Langrise, mark and save any unknown words or phrases, and then create "fill-the-gap" style exercises, in one of many ways.
@@ -75,7 +79,7 @@ You can help the project immensely by simply packaging it for a new platform.
 
 If nothing else, consider donating:
 
-[PayPal](https://paypal.me/JasonPBar)
-Bitcoin: `bitcoin:1P1X3x5uxREJTGBNkcEXpHeuueNYMMcSty`
-Litecoin: `MVQeBzRdyGbFLbnxJECh2rtKRUmys7wXkw`
+ * [PayPal](https://paypal.me/JasonPBar)
+ * Bitcoin: `bitcoin:1P1X3x5uxREJTGBNkcEXpHeuueNYMMcSty`
+ * Litecoin: `MVQeBzRdyGbFLbnxJECh2rtKRUmys7wXkw`
 
