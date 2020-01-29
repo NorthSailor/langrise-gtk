@@ -1,5 +1,22 @@
 # Langrise
 
+## Archival notice
+
+Unfortunately, while developing Langrise, I came to the sad conclusion that GTK+ 3 was not the best option for a cross-platform application of this nature.
+
+Some of the problems include:
+
+* No cross-platform HTML view widget (to support Web dictionaries)
+* A bug in GtkTextView that makes resizing multiline text very slow
+* Very complicated build and distribution process for Windows
+* Bad ergonomics of the GObject system
+
+I am therefore in the process of rewriting the Langrise application using Qt 5, in order to support more features and provide a much better user experience.
+
+If someone wishes to continue developing the GTK+ 3 version, feel free to fork this repository, and let me know so that I can link to it from the future Qt repository.
+
+---
+
 To get started with Langrise, consult the Wiki.
 
 ![screenshot](https://github.com/NorthSailor/langrise/raw/master/screenshots/main.png "Screenshot of Langrise")
