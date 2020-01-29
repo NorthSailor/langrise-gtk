@@ -19,7 +19,7 @@ If someone wishes to continue developing the GTK+ 3 version, feel free to fork t
 
 To get started with Langrise, consult the Wiki.
 
-![screenshot](https://github.com/NorthSailor/langrise/raw/master/screenshots/main.png "Screenshot of Langrise")
+![screenshot](https://github.com/NorthSailor/langrise-gtk/raw/master/screenshots/main.png "Screenshot of Langrise")
 
 ## What is it?
 Langrise is a vocabulary building tool, which, although inspired by LearningWithTexts and LingQ, follows a more systematic approach to storing vocabulary in comparison to those tools.
